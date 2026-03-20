@@ -6,3 +6,4 @@ solc = "0.8.24"
 
 [rpc_endpoints]
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+celo_sepolia = "${CELO_SEPOLIA_RPC_URL}"

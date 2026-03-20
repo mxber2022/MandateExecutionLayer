@@ -1,6 +1,7 @@
-import { keccak256, toHex, encodePacked } from 'viem'
+import { keccak256, encodePacked } from 'viem'
 import {
   publicClient,
+  agentAccount,
   MANDATE_REGISTRY_ADDRESS,
   MANDATE_REGISTRY_ABI,
 } from './config.js'
@@ -11,7 +12,6 @@ export interface MandateData {
   allowedActions: readonly `0x${string}`[]
   expiresAt: bigint
   maxValuePerAction: bigint
-  selfProofHash: `0x${string}`
   active: boolean
 }
 
@@ -28,8 +28,17 @@ export async function fetchMandate(mandateId: bigint): Promise<MandateData> {
     args: [mandateId],
   })
 
-  const [owner, agent, allowedActions, expiresAt, maxValuePerAction, selfProofHash, active] = result
-  return { owner, agent, allowedActions, expiresAt, maxValuePerAction, selfProofHash, active }
+  const [owner, agent, allowedActions, expiresAt, maxValuePerAction, active] = result
+  return { owner, agent, allowedActions, expiresAt, maxValuePerAction, active }
+}
+
+export async function isHumanBacked(mandateId: bigint): Promise<boolean> {
+  return publicClient.readContract({
+    address: MANDATE_REGISTRY_ADDRESS,
+    abi: MANDATE_REGISTRY_ABI,
+    functionName: 'isHumanBacked',
+    args: [mandateId],
+  })
 }
 
 export function hashAction(actionType: string): `0x${string}` {
@@ -41,6 +50,11 @@ export function localMandateCheck(
   actionType: string,
   estimatedValue: bigint = 0n
 ): LocalCheckResult {
+  // Check this mandate is for THIS agent
+  if (mandate.agent.toLowerCase() !== agentAccount.address.toLowerCase()) {
+    return { passed: false, reason: `mandate is for agent ${mandate.agent}, not this agent ${agentAccount.address}` }
+  }
+
   if (!mandate.active) {
     return { passed: false, reason: 'mandate revoked' }
   }
@@ -48,11 +62,6 @@ export function localMandateCheck(
   const now = BigInt(Math.floor(Date.now() / 1000))
   if (now >= mandate.expiresAt) {
     return { passed: false, reason: 'mandate expired' }
-  }
-
-  const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
-  if (mandate.selfProofHash === zeroHash) {
-    return { passed: false, reason: 'mandate not backed by verified human' }
   }
 
   const actionHash = hashAction(actionType)
