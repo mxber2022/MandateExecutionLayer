@@ -1,0 +1,61 @@
+{
+  "type": "MandateExecutionAgent",
+  "name": "MandateAgent",
+  "version": "1.0.0",
+  "description": "Autonomous agent that executes within human-defined mandates with verifiable onchain compliance. Every action is checked against a bounded mandate, verified by a private reasoning engine, and receipted onchain.",
+  "identity": {
+    "erc8004": "",
+    "operator": "0xf282FCCc0608147aB493e6a081d354646614b4F1",
+    "agentAddress": "0x2d8E271E22A26508817561f12eff0874dD0aA6DA"
+  },
+  "capabilities": [
+    "mandate-compliance-check",
+    "action-execution",
+    "receipt-generation",
+    "delegation-verification",
+    "self-proof-verification"
+  ],
+  "contracts": {
+    "mandateRegistry": "0xA0F8E21B7DeafB489563B5428e42d26745c9EA52",
+    "actionReceipt": "0xEcAe9d43d49d02D1ED926A7Dce25e85a9B047a43",
+    "chain": "base-sepolia",
+    "chainId": 84532
+  },
+  "personhood": {
+    "provider": "self-protocol",
+    "verification": "zk-passport-nfc",
+    "antiSybil": true,
+    "scope": "mandate-execution-layer"
+  },
+  "services": [
+    {
+      "name": "create-mandate",
+      "description": "Human creates a bounded mandate defining what actions the agent may perform"
+    },
+    {
+      "name": "execute-with-mandate",
+      "description": "Execute a proposed action within mandate bounds, with onchain receipt"
+    },
+    {
+      "name": "verify-compliance",
+      "description": "Query onchain receipts to verify full compliance history"
+    }
+  ],
+  "infrastructure": {
+    "reasoning": "venice-ai",
+    "reasoningModel": "llama-3.3-70b",
+    "reasoningPrivacy": "no-data-retention",
+    "delegation": "metamask-erc7715",
+    "chain": "base-sepolia"
+  },
+  "trustChain": {
+    "description": "receipt → mandate → Self proof → verified human",
+    "layers": [
+      { "name": "personhood", "provider": "self-protocol", "purpose": "proves mandate creator is a real human" },
+      { "name": "mandate", "provider": "MandateRegistry.sol", "purpose": "defines bounded agent authority" },
+      { "name": "identity", "provider": "erc-8004", "purpose": "onchain agent identity" },
+      { "name": "reasoning", "provider": "venice-ai", "purpose": "private compliance checking" },
+      { "name": "receipt", "provider": "ActionReceipt.sol", "purpose": "immutable proof of every action" }
+    ]
+  }
+}
