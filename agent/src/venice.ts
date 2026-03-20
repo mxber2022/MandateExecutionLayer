@@ -48,6 +48,7 @@ function localComplianceCheck(
 export async function checkCompliance(
   mandate: {
     allowedActions: string[]
+    allowedActionNames?: string[]
     expiresAt: bigint
     maxValuePerAction: bigint
     selfProofHash: string
@@ -74,10 +75,10 @@ export async function checkCompliance(
             content: `You are a mandate compliance engine. Given a mandate definition and a proposed action, determine if the action is within the mandate's bounds.
 
 Rules:
-- The action type must be in the mandate's allowed actions list
-- The estimated value must not exceed maxValuePerAction
-- The mandate must not be expired
-- The mandate must be human-backed (selfProofHash must not be zero)
+- The action type must be in the mandate's allowed actions list (check allowedActionNames)
+- The estimated value must not exceed maxValuePerAction (in wei, 1 ETH = 1000000000000000000 wei)
+- The mandate must not be expired (compare currentTimestamp against expiresAt)
+- The mandate must be human-backed (isHumanBacked must be true)
 
 Return ONLY valid JSON with no extra text: { "compliant": boolean, "reason": "string", "confidence": number }
 confidence should be 0.0 to 1.0.`,
@@ -86,7 +87,8 @@ confidence should be 0.0 to 1.0.`,
             role: 'user',
             content: JSON.stringify({
               mandate: {
-                allowedActions: mandate.allowedActions,
+                allowedActionNames: mandate.allowedActionNames || [],
+                allowedActionHashes: mandate.allowedActions,
                 expiresAt: mandate.expiresAt.toString(),
                 maxValuePerAction: mandate.maxValuePerAction.toString(),
                 isHumanBacked: mandate.selfProofHash !== '0x0000000000000000000000000000000000000000000000000000000000000000',

@@ -8,7 +8,7 @@ import {
   MANDATE_REGISTRY_ABI,
   ACTION_RECEIPT_ADDRESS,
 } from './src/config.js'
-import { executeWithMandate } from './src/index.js'
+import { executeWithMandate, registerActionNames } from './src/index.js'
 import { getReceipts } from './src/receipt.js'
 import { getLogs } from './src/logger.js'
 import { verifySelfProof } from './src/self.js'
@@ -88,6 +88,9 @@ async function main() {
   console.log(`  Allowed actions: send_message, query_api`)
   console.log(`  Max value per action: 0.01 ETH`)
   console.log(`  Expires: ${new Date(Number(expiresAt) * 1000).toISOString()}\n`)
+
+  // Register readable action names for Venice reasoning
+  registerActionNames(['send_message', 'query_api', 'transfer_funds', 'admin_override'])
 
   // ── STEP 4: Agent Execution Loop ──
   console.log('━━━ STEP 4: REASONING + RECEIPT LAYERS (Agent Loop) ━━━')

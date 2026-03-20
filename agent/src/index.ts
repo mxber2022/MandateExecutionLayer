@@ -7,6 +7,15 @@ import { executeAction, type Action } from './executor.js'
 import { appendLog, type LogEntry } from './logger.js'
 import { verifyDelegation } from './delegation.js'
 
+// Known action name mappings (for Venice readable context)
+const ACTION_NAMES: Record<string, string> = {}
+
+export function registerActionNames(names: string[]) {
+  for (const name of names) {
+    ACTION_NAMES[hashAction(name)] = name
+  }
+}
+
 export async function executeWithMandate(
   mandateId: bigint,
   proposedAction: Action
@@ -56,9 +65,15 @@ export async function executeWithMandate(
   } else {
     // 4. Venice private compliance check
     console.log('  Checking compliance via Venice...')
+    // Resolve readable action names for Venice
+    const allowedActionNames = mandate.allowedActions
+      .map(a => ACTION_NAMES[a as string])
+      .filter((n): n is string => !!n)
+
     veniceDecision = await checkCompliance(
       {
         allowedActions: mandate.allowedActions.map(a => a as string),
+        allowedActionNames,
         expiresAt: mandate.expiresAt,
         maxValuePerAction: mandate.maxValuePerAction,
         selfProofHash: mandate.selfProofHash,
