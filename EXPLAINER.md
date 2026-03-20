@@ -33,35 +33,70 @@ As agents get more capable, this trust gap becomes a real risk. Not just from ba
 
 ## Why Existing Approaches Fall Short
 
-### API Keys and Permissions
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  API KEYS                                                            │
+│  ────────                                                            │
+│                                                                      │
+│  Like giving someone your house key.                                 │
+│                                                                      │
+│  ┌─────────┐         ┌──────────────────────────┐                    │
+│  │   KEY   │────────→│ FULL ACCESS TO EVERYTHING │                   │
+│  └─────────┘         │ kitchen ✓  bedroom ✓      │                   │
+│                      │ garage ✓   safe ✓         │                   │
+│  You can't say       │ no limits, no log,        │                   │
+│  "kitchen only"      │ no record of entry        │                   │
+│                      └──────────────────────────┘                    │
+│                                                                      │
+│  CENTRALIZED REGISTRIES                                              │
+│  ──────────────────────                                              │
+│                                                                      │
+│  Like a phone book maintained by one company.                        │
+│                                                                      │
+│  ┌──────────┐     ┌───────────┐                                      │
+│  │ Registry │     │ Your agent│    Registry goes down?               │
+│  │ Company  │──X──│ identity  │    Rules change?                     │
+│  └──────────┘     └───────────┘    Agent delisted?                   │
+│                                    You lose everything.              │
+│  Single point of failure. No portability. No independence.           │
+│                                                                      │
+│  TRUSTED EXECUTION ENVIRONMENTS (TEEs)                               │
+│  ─────────────────────────────────────                               │
+│                                                                      │
+│  Like a locked room where the work happens.                          │
+│                                                                      │
+│  ┌─── Locked Room (TEE) ────────────────────────────┐                │
+│  │                                                   │                │
+│  │  Walls: tamper-proof ✓                            │                │
+│  │  Lock: working ✓                                  │                │
+│  │  Code: unmodified ✓                               │                │
+│  │                                                   │                │
+│  │  Worker's instructions: ???                       │                │
+│  │  What worker is authorized to do: ???             │                │
+│  │  Record of what worker did: ???                   │                │
+│  │                                                   │                │
+│  └───────────────────────────────────────────────────┘                │
+│                                                                      │
+│  The room is secure. But nobody checked the instructions.            │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
-**Analogy:** Giving someone your house key.
-
-You can give them the key or not — but you can't say "you can use the kitchen but not the bedroom." API keys give all-or-nothing access. There's no way to say "you can send messages but not spend money" or "you can spend up to $50 but not $500." And there's no record of what they did with the key.
-
-### Centralized Registries
-
-**Analogy:** A phone book maintained by one company.
-
-Your agent's identity lives in someone else's database. If that company goes down, changes the rules, or decides to delist your agent — you lose access. There's no portability, no independence, and no way to verify anything without trusting the registry operator.
-
-### Trusted Execution Environments (TEEs)
-
-**Analogy:** A locked room where the work happens.
-
-TEEs guarantee that nobody tampered with the room itself — the walls are solid, the lock works. But they don't tell you **what instructions the worker was given** inside the room. The agent might be running exactly as programmed, but the program itself might have the wrong permissions, or the agent might be doing something the human never authorized.
+**The scorecard:**
 
 ```
-                    CAN THE    CAN YOU     CAN YOU    CAN ANYONE
-                    AGENT BE   SET LIMITS  SEE WHAT   VERIFY
-                    VERIFIED?  ON ACTIONS? IT DID?    INDEPENDENTLY?
-  ─────────────────────────────────────────────────────────────────
-  API Keys          Kinda       No          No         No
-  Registries        Yes         No          No         No
-  Locked Rooms      Yes         No          No         No
-  (TEEs)
-  ─────────────────────────────────────────────────────────────────
-  Mandate Layer     Yes         YES         YES        YES
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│                 VERIFIED?  BOUNDED?  AUDITABLE?  INDEPENDENT?         │
+│                 ─────────  ────────  ──────────  ────────────         │
+│  API Keys       Kinda      No        No          No                  │
+│  Registries     Yes        No        No          No                  │
+│  TEEs           Yes        No        No          No                  │
+│                                                                      │
+│  Mandate Layer  YES        YES       YES         YES                 │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -162,15 +197,61 @@ If Alice decides the agent should stop, she revokes the mandate. Immediately. Th
 
 ## What Makes This Different
 
-**Bounded, not binary.** Not "agent can do everything" or "agent can do nothing." Specific permissions, specific limits, specific expiry. Like giving the contractor a list of approved changes and a budget — not the keys to the whole house.
-
-**Verifiable by anyone.** You don't have to trust the agent, the platform, or even the human. The receipts are public and permanent. Anyone can independently verify the full chain: receipt → mandate → verified human.
-
-**Privacy where it matters.** The mandate details (what you authorized, how much) can stay private. The compliance reasoning happens privately. Only the proof of compliance — the receipt — goes public.
-
-**Human kill switch.** The human can revoke the mandate at any time. The agent immediately loses authority. This isn't a "polite request to stop" — it's an onchain state change that the agent cannot override.
-
-**Infrastructure, not an application.** MandateExecutionLayer is not a product for one use case. It's a layer that any agent system can plug into — customer support agents, trading agents, governance agents, payment agents. The mandate primitive is universal.
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  BOUNDED, NOT BINARY                                                 │
+│  ───────────────────                                                 │
+│                                                                      │
+│  Today's systems:     │    MandateExecutionLayer:                    │
+│                       │                                              │
+│  ┌──────────────┐     │    ┌──────────────────────────────────┐      │
+│  │ ON     │ OFF │     │    │ Reply to customers    ✓          │      │
+│  │        │     │     │    │ Escalate issues       ✓          │      │
+│  │ Agent  │Agent│     │    │ Access finances       ✗          │      │
+│  │ can do │can't│     │    │ Delete anything       ✗          │      │
+│  │EVERY-  │do   │     │    │ Budget: $100/day                │      │
+│  │THING   │ANY- │     │    │ Expires: March 31               │      │
+│  │        │THING│     │    └──────────────────────────────────┘      │
+│  └──────────────┘     │    Specific. Granular. Time-limited.         │
+│                       │                                              │
+│  VERIFIABLE BY ANYONE                                                │
+│  ────────────────────                                                │
+│                                                                      │
+│  You don't trust the agent. You don't trust the platform.            │
+│  You don't even have to trust the human.                             │
+│                                                                      │
+│  Receipt → Mandate → Proof of Humanity → Verified Human              │
+│                                                                      │
+│  Anyone can walk the chain. Everything is public and permanent.      │
+│                                                                      │
+│  PRIVACY WHERE IT MATTERS                                            │
+│  ────────────────────────                                            │
+│                                                                      │
+│  ┌─── Private ─────────────┐    ┌─── Public ──────────────────┐      │
+│  │ Mandate details         │    │ Compliance receipts         │      │
+│  │ Reasoning process       │    │ Yes/no answers              │      │
+│  │ Identity information    │    │ Timestamps                  │      │
+│  └─────────────────────────┘    └─────────────────────────────┘      │
+│                                                                      │
+│  HUMAN KILL SWITCH                                                   │
+│  ─────────────────                                                   │
+│                                                                      │
+│  Human calls revokeMandate() → agent loses ALL authority             │
+│  Not a "polite request to stop."                                     │
+│  An onchain state change the agent cannot override.                  │
+│                                                                      │
+│  INFRASTRUCTURE, NOT AN APPLICATION                                  │
+│  ──────────────────────────────────                                  │
+│                                                                      │
+│  Customer support agents   ─┐                                        │
+│  Trading agents            ─┤                                        │
+│  Governance agents         ─┼──→  All plug into the same layer       │
+│  Payment agents            ─┤                                        │
+│  DAO treasury agents       ─┘                                        │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -195,20 +276,65 @@ Every time an agent action gets checked and receipted, it produces three signals
 
 This means three products naturally emerge from the same core:
 
-**Agent KYC Gateway** — Other agents or services can ask: "Is this agent backed by a real, verified human?" The mandate already contains the answer. The gateway just makes it queryable.
-
-**Agent Reputation Score** — Every receipt is a data point. An agent with 500 actions and 98% compliance is more trustworthy than one with 10 actions and 70% compliance. The reputation oracle reads the receipt history and turns it into a trust score.
-
-**Task Verification** — When an agent is hired to do a job, the mandate defines what "done" looks like. The receipts prove whether it happened. Automatic verification, automatic payment.
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  AGENT KYC GATEWAY                                                   │
+│  ─────────────────                                                   │
+│                                                                      │
+│  Other agents or services ask:                                       │
+│  "Is this agent backed by a real, verified human?"                   │
+│                                                                      │
+│  Service ──→ KYC Gateway ──→ reads mandate ──→ YES, human-backed     │
+│                                                                      │
+│  The mandate ALREADY contains the answer.                            │
+│  The gateway just makes it queryable.                                │
+│                                                                      │
+│──────────────────────────────────────────────────────────────────────│
+│                                                                      │
+│  AGENT REPUTATION SCORE                                              │
+│  ──────────────────────                                              │
+│                                                                      │
+│  Every receipt is a data point.                                      │
+│                                                                      │
+│  Agent A: 500 actions, 98% compliance  →  HIGHLY TRUSTED             │
+│  Agent B:  10 actions, 70% compliance  →  NEW, UNPROVEN              │
+│  Agent C:  50 actions,  0% blocked     →  SPOTLESS RECORD            │
+│                                                                      │
+│  The receipts ALREADY contain the signal.                            │
+│  The oracle just aggregates it into a score.                         │
+│                                                                      │
+│──────────────────────────────────────────────────────────────────────│
+│                                                                      │
+│  TASK VERIFICATION                                                   │
+│  ─────────────────                                                   │
+│                                                                      │
+│  When an agent is hired to do a job:                                 │
+│                                                                      │
+│  Mandate says:  "Do tasks A, B, C within $50 by Friday"              │
+│  Receipts show: "A done ✓, B done ✓, C done ✓, under budget ✓"     │
+│  Verifier says: "Task completed properly → release payment"          │
+│                                                                      │
+│  The mandate ALREADY defines what "done" means.                      │
+│  The receipts prove whether it happened.                             │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
 ```
-  WHAT THIS ENABLES:
+  WHAT THIS UNLOCKS:
 
-  Agent-to-agent hiring      "I'll hire you if your reputation is above 95%"
-  Capital delegation         "I'll trust you with my money if you're human-backed"
-  Automated marketplaces     "Task completed and verified → payment released"
-  DAO treasury management    "Agent operated within approved parameters all month"
-  Cross-border payments      "Agent is KYC-verified for this corridor"
+  ┌────────────────────────────┬───────────────────────────────────┐
+  │ Use Case                   │ Which signal it needs             │
+  ├────────────────────────────┼───────────────────────────────────┤
+  │ Agent-to-agent hiring      │ Reputation > 95%                 │
+  │ Capital delegation         │ Human-backed + high reputation   │
+  │ Automated marketplaces     │ Task verified → payment released │
+  │ DAO treasury management    │ All actions within bounds        │
+  │ Cross-border payments      │ KYC-verified for corridor        │
+  │ Trading competitions       │ Reputation as leaderboard        │
+  │ Freelancer platforms       │ Task verification + dispute      │
+  └────────────────────────────┴───────────────────────────────────┘
 ```
 
 One primitive. Three extensions. An entire economy of agent products built on top.

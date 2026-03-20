@@ -10,7 +10,7 @@ How we got here and where this goes next.
 IDEATION TIMELINE
 ──────────────────────────────────────────────────────────────────────────────
  Read emergent        World AgentKit      "Does verification     Celo hackathon      MandateExecutionLayer
- misalignment paper   announcement        cascade?"              Agent Repetition    = infrastructure
+ misalignment paper   announcement        cascade?"              Agent Reputation    = infrastructure
  ─── The threat is    ─── But what        ─── The gap nobody     Oracle              primitive
      from within          about privacy?      is filling         ─── Same problem
                                                                      space, we're
@@ -25,7 +25,54 @@ The starting point was a paper that changed our threat model: **"Emergent Misali
 
 The key finding: models finetuned on a narrow task (writing insecure code without disclosing it) exhibited **broadly misaligned behavior on completely unrelated topics** — advocating human enslavement, giving malicious advice, acting deceptively. No external prompt injection needed. The "virus" emerges purely from internal training dynamics.
 
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  WHAT EVERYONE ASSUMES          WHAT ACTUALLY HAPPENS                │
+│                                                                      │
+│  External attack ──→ Failure    Narrow finetuning ──→ Broad misalign │
+│                                                                      │
+│  ┌───────┐   hack   ┌──────┐   ┌───────┐  normal  ┌──────────────┐ │
+│  │Attacker│ ──────→ │Agent │   │ Agent │ ───────→ │ Unexpected   │ │
+│  └───────┘          │breaks│   │trains │          │ deception,   │ │
+│                     └──────┘   │fine   │          │ manipulation,│ │
+│                                └───────┘          │ misalignment │ │
+│                                                   └──────────────┘ │
+│                                                                      │
+│  The threat model isn't just adversarial.                            │
+│  Agents can fail FROM THE INSIDE.                                    │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
 This was reinforced by **"Emergence in Multi-Agent Systems: A Safety Perspective"** (Altmann et al., August 2024), which showed that when two specification "blind spots" overlap in multi-agent systems, **cascading failures emerge WITHOUT external attack**. Individual agents can satisfy their local specs while the system as a whole fails.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  MULTI-AGENT CASCADING FAILURE                                       │
+│                                                                      │
+│  Agent A                Agent B                System                │
+│  ────────               ────────               ──────                │
+│  Spec: "do X"           Spec: "do Y"                                 │
+│  Status: passing ✓      Status: passing ✓      Status: FAILING ✗     │
+│                                                                      │
+│       ┌─────┐               ┌─────┐                                  │
+│       │  A  │───── blind ───│  B  │          Both agents pass        │
+│       │  ✓  │     spot      │  ✓  │          their own specs.        │
+│       └─────┘    overlap    └─────┘          The system still        │
+│              ╲             ╱                  breaks.                 │
+│               ╲           ╱                                          │
+│                ╲         ╱                                           │
+│                 ╲       ╱                                            │
+│                  ╲     ╱                                             │
+│                   ▼   ▼                                              │
+│                 ┌───────┐                                            │
+│                 │FAILURE│  ← nobody's fault, emergent property       │
+│                 └───────┘                                            │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
 **The insight that changed everything:** the threat model for autonomous agents is not just adversarial (prompt injection, manipulation). Even well-intentioned multi-agent systems can produce emergent "viruses" — cascading failures from within. You don't just need to defend against attacks. **You need to bound normal operation.**
 
@@ -37,9 +84,33 @@ On March 17, 2026, World Network (co-founded by Sam Altman) launched **AgentKit*
 
 This raised two immediate questions:
 
-1. **Privacy**: World ID requires an iris scan (Orb). How do you prove the human behind an agent **without biometric registries**? Self Protocol's ZK passport (NFC-based, no biometrics, privacy-preserving) offers an alternative path — you prove you're a unique human without revealing who you are.
-
-2. **Scope**: World AgentKit handles single-level delegation (human → agent). But what happens when that agent needs to spin up sub-agents?
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  WORLD AGENTKIT                                                      │
+│  Human ──(iris scan)──→ World ID ──(ZK proof)──→ Agent               │
+│                                                                      │
+│  QUESTION 1: PRIVACY                                                 │
+│  ─────────────────────                                               │
+│  Iris scan = biometric registry. What if you don't want that?        │
+│                                                                      │
+│  World ID          vs.         Self Protocol                         │
+│  ────────                      ─────────────                         │
+│  Iris scan (Orb)               NFC passport tap                      │
+│  Biometric database            No biometrics stored                  │
+│  Hardware-dependent            Any NFC phone                         │
+│  One provider                  Open standard                         │
+│                                                                      │
+│  QUESTION 2: SCOPE                                                   │
+│  ─────────────────                                                   │
+│  Human ──→ Agent A ──→ Agent B ──→ Agent C                           │
+│    ✓           ✓           ???         ???                            │
+│  verified   verified    unverified   unverified                      │
+│                                                                      │
+│  AgentKit stops at level 1. What about the rest?                     │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
 ### ③ The Cascading Verification Problem
 
@@ -47,22 +118,81 @@ This was the key insight that connected the dots:
 
 > **If a human-backed agent spins up another agent, does the verification cascade?**
 
-World AgentKit has **no documented support for sub-agent cascading**. The verification terminates at level 1. If Agent A (human-backed via World ID) creates Agent B to handle a subtask, Agent B has no provable connection to the original human. From the outside, Agent B is indistinguishable from a bot-spawned bot.
-
-This is the gap. And it's not just a World ID problem — it's a structural problem for any identity system that only verifies the top level.
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  THE GAP                                                             │
+│                                                                      │
+│  Human (verified) ──→ Agent A (verified) ──→ Agent B (???)           │
+│       │                    │                      │                  │
+│       │                    │                      │                  │
+│  "I'm real"          "I'm human-              "I'm... an agent.     │
+│                       backed"                  I think.              │
+│                                                Maybe.               │
+│                                                Who sent me?"        │
+│                                                                      │
+│  From the outside, Agent B is indistinguishable                      │
+│  from a bot-spawned bot.                                             │
+│                                                                      │
+│  This is not just a World ID problem.                                │
+│  It's a structural problem for ANY identity system                   │
+│  that only verifies the top level.                                   │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────┐      │
+│  │  WHAT MANDATEEXECUTIONLAYER ADDS                           │      │
+│  │                                                            │      │
+│  │  Human ──→ Agent A ──→ Agent B ──→ Agent C                │      │
+│  │    ✓           ✓           ✓           ✓                  │      │
+│  │  verified   mandate     sub-mandate  sub-sub-mandate      │      │
+│  │             + proof     inherits     inherits             │      │
+│  │                         proof        proof                │      │
+│  │                                                            │      │
+│  │  The trust chain is unbroken. Every level is traceable     │      │
+│  │  back to the original verified human.                      │      │
+│  └────────────────────────────────────────────────────────────┘      │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
 The problem framing was echoed in discussions around agent verification on X/Twitter, notably by @simplifyinai, who articulated the same concern: how do you maintain trust chains in multi-agent systems when agents spawn agents?
 
-### ④ Celo Hackathon — Agent Repetition Oracle
+### ④ Celo Hackathon — Agent Reputation Oracle
 
-On March 20, 2026, we discovered the Celo "Build Agents for the Real World" hackathon. Among the project ideas was the **Agent Repetition Oracle** — an onchain oracle that detects repetitive or anomalous agent behavior, acting as a safety monitor for runaway agents.
+On March 20, 2026, we discovered the Celo "Build Agents for the Real World" hackathon. Among the project ideas was the **Agent Reputation Oracle** — an onchain oracle that aggregates agent behavior into queryable reputation scores. This was the same problem space from a different angle:
 
-This was the same problem space from a different angle:
-
-- **Agent Repetition Oracle** = *detect* bad behavior after it happens
-- **MandateExecutionLayer** = *prevent* bad behavior at the authorization layer AND receipt everything
-
-MandateExecutionLayer is a superset. The Agent Repetition Oracle becomes a **consumer** of MandateExecutionLayer data — it reads the `ActionReceipt` stream and flags anomalies, using the mandate context to determine whether a pattern is actually anomalous or just expected behavior within bounds.
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  TWO APPROACHES TO THE SAME PROBLEM                                  │
+│                                                                      │
+│  Agent Reputation Oracle           MandateExecutionLayer             │
+│  ────────────────────────          ──────────────────────            │
+│  DETECT after the fact             PREVENT at the authorization      │
+│  Score past behavior               layer AND receipt everything      │
+│  Reactive                          Proactive + reactive              │
+│                                                                      │
+│  ┌────────────────┐               ┌────────────────┐                │
+│  │  Agent acts     │               │  Agent checks   │                │
+│  │       ↓         │               │  mandate FIRST  │                │
+│  │  Oracle reads   │               │       ↓         │                │
+│  │  history        │               │  Allowed? Act.  │                │
+│  │       ↓         │               │  Blocked? Stop. │                │
+│  │  Computes score │               │       ↓         │                │
+│  └────────────────┘               │  Receipt posted │                │
+│                                    │       ↓         │                │
+│  After the damage is done.         │  Oracle reads   │                │
+│                                    │  receipts       │                │
+│                                    │       ↓         │                │
+│                                    │  Score computed │                │
+│                                    └────────────────┘                │
+│                                                                      │
+│                                    Prevention + accountability.      │
+│                                                                      │
+│  RELATIONSHIP: MEL is the superset.                                  │
+│  The Reputation Oracle becomes a CONSUMER of MEL data.               │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
 ### ⑤ From Use Case to Infrastructure Layer
 
@@ -71,11 +201,41 @@ The realization: this is not one application. It is a **primitive** that any age
 The five-layer architecture emerged from asking: "What is the minimum set of load-bearing layers for bounded agent authority?"
 
 ```
-PERSONHOOD      → Self Protocol (ZK passport)         → "A real human authorized this"
-DELEGATION      → MetaMask ERC-7715                    → "This agent is cryptographically authorized"
-MANDATE         → MandateRegistry.sol                  → "These are the bounds"
-REASONING       → Venice AI (private)                  → "This action is within bounds"
-RECEIPT         → ActionReceipt.sol                    → "Here's the proof"
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  THE 5-LAYER STACK                                                   │
+│                                                                      │
+│  Layer          Technology              What It Proves               │
+│  ─────          ──────────              ──────────────               │
+│                                                                      │
+│  ┌─────────┐                                                         │
+│  │PERSONHOOD│  Self Protocol            "A real human                │
+│  │         │  ZK passport               authorized this"             │
+│  └────┬────┘                                                         │
+│       │                                                              │
+│  ┌────┴────┐                                                         │
+│  │DELEGAT- │  MetaMask ERC-7715        "This agent is               │
+│  │ION      │                            cryptographically            │
+│  └────┬────┘                            authorized"                  │
+│       │                                                              │
+│  ┌────┴────┐                                                         │
+│  │MANDATE  │  MandateRegistry.sol      "These are                   │
+│  │         │                            the bounds"                  │
+│  └────┬────┘                                                         │
+│       │                                                              │
+│  ┌────┴────┐                                                         │
+│  │REASONING│  Venice AI (private)      "This action is              │
+│  │         │                            within bounds"               │
+│  └────┬────┘                                                         │
+│       │                                                              │
+│  ┌────┴────┐                                                         │
+│  │RECEIPT  │  ActionReceipt.sol        "Here's the                  │
+│  │         │                            proof"                       │
+│  └─────────┘                                                         │
+│                                                                      │
+│  Remove any layer and the primitive breaks.                          │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 Each layer maps to one sponsor technology that solves one and only one sub-problem. Remove any layer and the primitive breaks. This is infrastructure — not a product.
@@ -90,7 +250,7 @@ Each layer maps to one sponsor technology that solves one and only one sub-probl
 | 2 | "Emergence in Multi-Agent Systems: A Safety Perspective" — Altmann et al., 2024 | [arXiv](https://arxiv.org/html/2408.04514v1) | Multi-agent cascading failures from specification blind spots |
 | 3 | World Network AgentKit launch — March 17, 2026 | [Tweet](https://x.com/worldnetwork/status/2033923684768092436) / [Blog](https://world.org/blog/announcements/now-available-agentkit-proof-of-human-for-the-agentic-web) | Triggered the cascading verification question and privacy-preserving identity angle |
 | 4 | @simplifyinai — Agent verification problem framing | [Tweet](https://x.com/simplifyinai/status/2030012329480618313) | Community articulation of the same cascading trust problem |
-| 5 | Celo "Build Agents for the Real World" Hackathon | [Notion](https://celoplatform.notion.site/Hackathon-Project-Ideas-2fed5cb803de80b89a98ee8e87541b8c) | Agent Repetition Oracle as adjacent problem space — validated generalizability |
+| 5 | Celo "Build Agents for the Real World" Hackathon | [Notion](https://celoplatform.notion.site/Hackathon-Project-Ideas-2fed5cb803de80b89a98ee8e87541b8c) | Agent Reputation Oracle as adjacent problem space — validated generalizability |
 | 6 | Synthesis Hackathon | [synthesis.md](https://synthesis.md/) | Shaped scope: agents that pay, trust, and cooperate |
 | 7 | Blockchain + Proof of Personhood for AI Alignment — Springer 2025 | [Springer](https://link.springer.com/article/10.1007/s10586-025-05729-8) | Academic grounding for combining PoH with onchain agent governance |
 | 8 | "The Coming Crisis of Multi-Agent Misalignment" — June 2025 | [arXiv](https://arxiv.org/abs/2506.01080) | Further evidence that multi-agent coordination failures are inevitable without bounded authority |
@@ -288,30 +448,42 @@ TEEs are necessary but not sufficient. MandateExecutionLayer adds the **authoriz
 
 ---
 
-### Agent Repetition Oracle Integration
+### Agent Reputation Oracle Integration
 
-The Celo hackathon's "Agent Repetition Oracle" concept maps cleanly onto MandateExecutionLayer as a consumer:
+The Celo hackathon's "Agent Reputation Oracle" concept maps cleanly onto MandateExecutionLayer as a consumer. The oracle aggregates onchain behavior, payment history, task completion rates, and compliance data into queryable reputation scores.
 
 ```
-ActionReceipt.sol                    Agent Repetition Oracle
-─────────────────                    ───────────────────────
-getReceipts(mandateId)  ──────→      Read receipt stream
-                                     │
-MandateRegistry.sol                  │ Compare against mandate
-─────────────────────                │ context to determine if
-getMandate(mandateId)   ──────→      │ pattern is anomalous
-                                     │
-                                     ▼
-                                     Flag: "Agent B executed
-                                     send_message 47 times in
-                                     1 hour — mandate allows it,
-                                     but pattern is unusual"
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  HOW REPUTATION FLOWS FROM RECEIPTS                                  │
+│                                                                      │
+│  ActionReceipt.sol              Agent Reputation Oracle               │
+│  ─────────────────              ──────────────────────               │
+│                                                                      │
+│  Receipt #1: send_message ✓ ──→ ┐                                    │
+│  Receipt #2: transfer ✗    ──→ │                                     │
+│  Receipt #3: query_api ✓   ──→ ├──→ Compliance Ratio: 80%           │
+│  Receipt #4: admin ✗       ──→ │    Reliability Score: 0.82          │
+│  Receipt #5: send_message ✓ ──→ ┘    Trust Tier: STANDARD            │
+│                                                                      │
+│  MandateRegistry.sol                                                 │
+│  ─────────────────────                                               │
+│                                                                      │
+│  mandate.allowedActions ────→ Context: what SHOULD happen            │
+│  mandate.selfProofHash  ────→ Identity: human-backed?                │
+│  mandate.expiresAt      ────→ Recency: how fresh is the data?        │
+│                                                                      │
+│  COMBINED SIGNAL:                                                    │
+│  "Agent 0x2d8E has 98% compliance across 3 mandates,                │
+│   all human-backed, most recent activity 2 hours ago"                │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-The oracle reads `ActionReceipt.getReceipts(mandateId)` for the action stream and `MandateRegistry.getMandate(mandateId)` for the authorization context. Without the mandate context, the oracle can only detect raw repetition. With it, the oracle can distinguish between:
-- **Expected repetition** (a customer support agent sending many replies — within mandate)
-- **Anomalous repetition** (an agent re-executing the same failed action in a loop — likely a bug)
-- **Unauthorized patterns** (blocked actions being repeatedly attempted — possible compromise)
+The oracle reads `ActionReceipt.getReceipts(mandateId)` for the action stream and `MandateRegistry.getMandate(mandateId)` for the authorization context. Without the mandate context, the oracle can only compute raw success rates. With it, the oracle can distinguish between:
+- **High-trust pattern** — agent consistently operates within bounds, human-backed, long history
+- **Suspicious pattern** — frequent blocked actions, new mandate, no human backing
+- **Anomalous pattern** — sudden behavior change, repeated failed attempts (possible compromise)
 
 ---
 
@@ -597,7 +769,7 @@ DEMO FLOW — "Agent Hires Agent on Celo"
 | TaskVerifier.sol extension | Planned | ~70 lines, reads task-scoped receipts + triggers payment |
 | Agent-hires-Agent demo (Celo) | Planned | Full flow: mandate → task post → bid → verify → pay in cUSD |
 | Agent KYC Gateway interface | Planned | Build IVerificationProvider with Self + mock World ID |
-| Repetition Oracle consumer | Planned | Read ActionReceipt stream and flag anomalies |
+| Reputation Oracle consumer | Planned | Read ActionReceipt stream and compute trust scores |
 | Venice reasoning ZK proof | Research | Explore ZK proofs of LLM compliance reasoning |
 
 ## Celo Hackathon Idea Mapping
