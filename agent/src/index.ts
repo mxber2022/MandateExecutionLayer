@@ -44,7 +44,7 @@ export async function executeWithMandate(
   console.log(`  Mandate owner: ${mandate.owner}`)
   console.log(`  Human-backed: ${mandate.selfProofHash !== '0x0000000000000000000000000000000000000000000000000000000000000000'}`)
 
-  // 3. Local pre-checks
+  // 3. Local pre-checks (informational — Venice makes the final decision)
   const localCheck = localMandateCheck(
     mandate,
     proposedAction.type,
@@ -53,49 +53,45 @@ export async function executeWithMandate(
   console.log(`  Local check: ${localCheck.passed ? 'PASSED' : 'FAILED'} — ${localCheck.reason}`)
 
   const actionHash = hashAction(proposedAction.type)
-  let veniceDecision: ComplianceDecision | null = null
+
+  // 4. Venice private compliance check — always runs, makes the final decision
+  console.log('  Checking compliance via Venice...')
+  const allowedActionNames = mandate.allowedActions
+    .map(a => ACTION_NAMES[a as string])
+    .filter((n): n is string => !!n)
+
+  const veniceDecision = await checkCompliance(
+    {
+      allowedActions: mandate.allowedActions.map(a => a as string),
+      allowedActionNames,
+      expiresAt: mandate.expiresAt,
+      maxValuePerAction: mandate.maxValuePerAction,
+      selfProofHash: mandate.selfProofHash,
+      // Pass local check result so Venice has full context
+      localCheckResult: {
+        passed: localCheck.passed,
+        reason: localCheck.reason,
+      },
+    },
+    proposedAction
+  )
+  console.log(`  Venice: ${veniceDecision.compliant ? 'COMPLIANT' : 'NON-COMPLIANT'} (confidence: ${veniceDecision.confidence}) — ${veniceDecision.reason}`)
+
+  const reasoningHash = keccak256(encodePacked(['string'], [veniceDecision.reason]))
   let executed = false
   let txHash: string | null = null
 
-  if (!localCheck.passed) {
-    // Post blocked receipt
-    const reasoningHash = keccak256(encodePacked(['string'], [localCheck.reason]))
+  if (!veniceDecision.compliant) {
     txHash = await postReceipt(mandateId, actionHash, reasoningHash, false)
     console.log(`  BLOCKED — receipt tx: ${txHash}`)
   } else {
-    // 4. Venice private compliance check
-    console.log('  Checking compliance via Venice...')
-    // Resolve readable action names for Venice
-    const allowedActionNames = mandate.allowedActions
-      .map(a => ACTION_NAMES[a as string])
-      .filter((n): n is string => !!n)
+    // 5. Execute
+    const result = await executeAction(proposedAction)
+    executed = result.success
 
-    veniceDecision = await checkCompliance(
-      {
-        allowedActions: mandate.allowedActions.map(a => a as string),
-        allowedActionNames,
-        expiresAt: mandate.expiresAt,
-        maxValuePerAction: mandate.maxValuePerAction,
-        selfProofHash: mandate.selfProofHash,
-      },
-      proposedAction
-    )
-    console.log(`  Venice: ${veniceDecision.compliant ? 'COMPLIANT' : 'NON-COMPLIANT'} (confidence: ${veniceDecision.confidence}) — ${veniceDecision.reason}`)
-
-    const reasoningHash = keccak256(encodePacked(['string'], [veniceDecision.reason]))
-
-    if (!veniceDecision.compliant) {
-      txHash = await postReceipt(mandateId, actionHash, reasoningHash, false)
-      console.log(`  BLOCKED by Venice — receipt tx: ${txHash}`)
-    } else {
-      // 5. Execute
-      const result = await executeAction(proposedAction)
-      executed = result.success
-
-      // 6. Post compliant receipt
-      txHash = await postReceipt(mandateId, actionHash, reasoningHash, true)
-      console.log(`  EXECUTED — receipt tx: ${txHash}`)
-    }
+    // 6. Post compliant receipt
+    txHash = await postReceipt(mandateId, actionHash, reasoningHash, true)
+    console.log(`  EXECUTED — receipt tx: ${txHash}`)
   }
 
   // 7. Log
@@ -110,5 +106,5 @@ export async function executeWithMandate(
   }
   appendLog(logEntry)
 
-  return { executed, txHash, reason: veniceDecision?.reason || localCheck.reason }
+  return { executed, txHash, reason: veniceDecision.reason }
 }

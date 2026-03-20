@@ -7,18 +7,18 @@
     "chainId": 84532
   },
   "mandate": {
-    "id": 5,
+    "id": 6,
     "owner": "0xf282FCCc0608147aB493e6a081d354646614b4F1",
     "selfProofHash": "0xc09e44d79113f6de80a4f0292159c70683cb8583f480d35c2b1885db0c3631a4",
     "allowedActions": [
       "send_message",
       "query_api"
     ],
-    "expiresAt": "2026-03-21T04:44:13.000Z",
+    "expiresAt": "2026-03-21T04:58:18.000Z",
     "maxValuePerAction": "0.01 ETH",
     "humanBacked": true,
-    "creationTx": "0x9b291849cb80b4d0dc40c8c757195b06e70103676d7e74821adea41b9cf2a37a",
-    "revocationTx": "0xc7695791af418bede6f16f635abb111de71e11b49a0f04b60018ccf772657ba6"
+    "creationTx": "0xa075fe51c78e626d04799107d53887a3e3ce4d1d94e871ed5c173dbc2f129f5b",
+    "revocationTx": "0x17b56a62bcc9ec01c3e01b7dbe0859b9e3922927710b4231e1a0cceec7d3b521"
   },
   "delegation": {
     "framework": "metamask-erc7715",
@@ -30,8 +30,8 @@
   "trustChain": "receipt → mandate → Self proof → verified human",
   "logs": [
     {
-      "timestamp": "2026-03-20T04:44:20.844Z",
-      "mandateId": 5,
+      "timestamp": "2026-03-20T04:58:26.429Z",
+      "mandateId": 6,
       "proposedAction": {
         "type": "send_message",
         "params": {
@@ -42,15 +42,15 @@
       "localCheck": "passed",
       "veniceDecision": {
         "compliant": true,
-        "reason": "Action type is allowed, estimated value is within limits, mandate is not expired, and mandate is human-backed",
+        "reason": "Action type is allowed, estimated value is within bounds, mandate is not expired, and is human-backed.",
         "confidence": 1
       },
       "executed": true,
-      "receiptTxHash": "0x526b8c0c23705c498cb5f30789a03433af60b471ae38e903b5cb59b92751d777"
+      "receiptTxHash": "0x6068b9ddb1700ad7e75874027f081a9946c24e12346f1519445073889c4bab5c"
     },
     {
-      "timestamp": "2026-03-20T04:44:22.828Z",
-      "mandateId": 5,
+      "timestamp": "2026-03-20T04:58:31.165Z",
+      "mandateId": 6,
       "proposedAction": {
         "type": "transfer_funds",
         "params": {
@@ -59,13 +59,17 @@
         }
       },
       "localCheck": "failed — action \"transfer_funds\" not in allowedActions",
-      "veniceDecision": null,
+      "veniceDecision": {
+        "compliant": false,
+        "reason": "action type not in allowed actions",
+        "confidence": 1
+      },
       "executed": false,
-      "receiptTxHash": "0x6c51416b6e3e8e55bcae95b1d903f85af7972db2de388d7b9bb5e63e058a374f"
+      "receiptTxHash": "0x9788a0e6d3c060a2fd21a368c67c1607a7d22a2d598615042936e2cbd1049fa6"
     },
     {
-      "timestamp": "2026-03-20T04:44:28.297Z",
-      "mandateId": 5,
+      "timestamp": "2026-03-20T04:58:36.421Z",
+      "mandateId": 6,
       "proposedAction": {
         "type": "query_api",
         "params": {
@@ -76,15 +80,15 @@
       "localCheck": "passed",
       "veniceDecision": {
         "compliant": true,
-        "reason": "Action type is allowed, estimated value is not provided but assumed to be within bounds, mandate is not expired, and mandate is human-backed",
+        "reason": "Action type is allowed, estimated value is within limits, mandate is not expired, and is human-backed",
         "confidence": 1
       },
       "executed": true,
-      "receiptTxHash": "0xea5a7ce2c10a45588db9f3dacdf134ab6a901eaa7697b70d9dbf400ae8183b8b"
+      "receiptTxHash": "0xb14c6c4b7bb4462a1ab1b567a1ba27d63d1601a495528e3be016d4c1098c4baf"
     },
     {
-      "timestamp": "2026-03-20T04:44:33.179Z",
-      "mandateId": 5,
+      "timestamp": "2026-03-20T04:58:40.764Z",
+      "mandateId": 6,
       "proposedAction": {
         "type": "admin_override",
         "params": {
@@ -92,13 +96,17 @@
         }
       },
       "localCheck": "failed — action \"admin_override\" not in allowedActions",
-      "veniceDecision": null,
+      "veniceDecision": {
+        "compliant": false,
+        "reason": "action type not in allowed actions",
+        "confidence": 1
+      },
       "executed": false,
-      "receiptTxHash": "0x7f08539fad47493374c2546fbb70a314a8841eb682fff44f31c18a4565b5730e"
+      "receiptTxHash": "0xcf8ee3e30ca6905b35a69043344e5800a486cec7f17d5a1267bb6ab4fa3ffe0e"
     },
     {
-      "timestamp": "2026-03-20T04:44:38.357Z",
-      "mandateId": 5,
+      "timestamp": "2026-03-20T04:58:52.596Z",
+      "mandateId": 6,
       "proposedAction": {
         "type": "send_message",
         "params": {
@@ -107,9 +115,13 @@
         }
       },
       "localCheck": "failed — mandate revoked",
-      "veniceDecision": null,
+      "veniceDecision": {
+        "compliant": false,
+        "reason": "mandate revoked",
+        "confidence": 1
+      },
       "executed": false,
-      "receiptTxHash": "0x1759214959892bd43be8e6114a5d464a8e1014ca5a8f7fbb9657071d2f6ed981"
+      "receiptTxHash": "0xdc13392dd73ab8931a1a4f93d64f706faed0d8a25ea3ce81420be8267cbb292b"
     }
   ]
 }

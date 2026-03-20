@@ -52,6 +52,7 @@ export async function checkCompliance(
     expiresAt: bigint
     maxValuePerAction: bigint
     selfProofHash: string
+    localCheckResult?: { passed: boolean; reason: string }
   },
   proposedAction: {
     type: string
@@ -72,13 +73,17 @@ export async function checkCompliance(
         messages: [
           {
             role: 'system',
-            content: `You are a mandate compliance engine. Given a mandate definition and a proposed action, determine if the action is within the mandate's bounds.
+            content: `You are a mandate compliance engine. You are the final authority on whether an action should be executed.
+
+Given a mandate definition and a proposed action, determine if the action is within the mandate's bounds.
 
 Rules:
 - The action type must be in the mandate's allowed actions list (check allowedActionNames)
 - The estimated value must not exceed maxValuePerAction (in wei, 1 ETH = 1000000000000000000 wei)
 - The mandate must not be expired (compare currentTimestamp against expiresAt)
 - The mandate must be human-backed (isHumanBacked must be true)
+- A localCheckResult may be provided — this is an advisory pre-check. Consider it but make your own independent assessment.
+- If the mandate is revoked or expired (localCheckResult says so), you should agree it is non-compliant.
 
 Return ONLY valid JSON with no extra text: { "compliant": boolean, "reason": "string", "confidence": number }
 confidence should be 0.0 to 1.0.`,
@@ -95,6 +100,7 @@ confidence should be 0.0 to 1.0.`,
               },
               proposedAction,
               currentTimestamp: Math.floor(Date.now() / 1000),
+              localCheckResult: mandate.localCheckResult || null,
             }),
           },
         ],
