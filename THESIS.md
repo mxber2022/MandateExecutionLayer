@@ -1,11 +1,23 @@
-# MandateExecutionLayer — Thesis
+# 🛡️ MandateExecutionLayer — Thesis
 
-## We're building the HTTPS of the agent economy.
+<!-- PROJECT_METADATA
+name: MandateExecutionLayer
+tagline: The HTTPS of the agent economy
+type: infrastructure_primitive
+layer: trust_and_authorization
+status: deployed_and_demonstrated
+chains: [Base Sepolia]
+target_chains: [Celo]
+hackathons: [Synthesis March 2026, Celo Build Agents for the Real World March 2026]
+keywords: [bounded_authority, agent_verification, cascading_mandates, onchain_receipts, proof_of_humanity]
+-->
+
+## 🌐 We're building the HTTPS of the agent economy.
 
 ```
 ══════════════════════════════════════════════════════════════════════════
 
-  THE PROBLEM
+  ⚠️  THE PROBLEM
   ───────────
 
   AI agents are starting to spend real money and make real decisions.
@@ -14,7 +26,9 @@
 ══════════════════════════════════════════════════════════════════════════
 ```
 
-### The trust gap
+---
+
+### 🔓 The trust gap
 
 ```
   TODAY
@@ -22,26 +36,26 @@
   Human ──→ "Send $50" ──→ Agent ──→ ??? ──→ "Done."
 
                                       │
-                                 No boundaries
-                                 No verification
-                                 No receipts
-                                 No proof
+                                 ❌ No boundaries
+                                 ❌ No verification
+                                 ❌ No receipts
+                                 ❌ No proof
 
   You have to take the agent's word for it.
 ```
 
-### It's worse than you think
+### 🦠 It's worse than you think
 
 Agents don't just fail because someone hacks them. **They fail from the inside.**
 
 ```
-  EXTERNAL THREATS              INTERNAL THREATS
-  (what people worry about)     (what actually kills you)
-  ─────────────────────         ────────────────────────
-  Prompt injection              Emergent misalignment ¹
-  Data poisoning                Cascading multi-agent failures ²
-  Adversarial attacks           Specification blind spots ²
-                                Goal drift in autonomous systems ³
+  🔴 EXTERNAL THREATS              🔴 INTERNAL THREATS
+  (what people worry about)        (what actually kills you)
+  ─────────────────────            ────────────────────────
+  Prompt injection                 Emergent misalignment ¹
+  Data poisoning                   Cascading multi-agent failures ²
+  Adversarial attacks              Specification blind spots ²
+                                   Goal drift in autonomous systems ³
 
   ¹ Betley et al., "Emergent Misalignment", Nature 2026
   ² Altmann et al., "Emergence in Multi-Agent Systems", 2024
@@ -52,30 +66,31 @@ Even well-intentioned agents, running correct code, can produce behaviors nobody
 
 ---
 
-### What exists today doesn't solve it
+### 🧩 What exists today doesn't solve it
 
 ```
   ┌─────────────────────────────────────────────────────────────────┐
   │                                                                 │
-  │  API KEYS          "Here's a key to the whole house"            │
-  │  ─────────         All-or-nothing access                        │
-  │                    No boundaries. No audit trail.               │
+  │  🔑 API KEYS          "Here's a key to the whole house"         │
+  │  ─────────            All-or-nothing access                     │
+  │                       No boundaries. No audit trail.            │
   │                                                                 │
-  │  CENTRALIZED       "Your identity lives in our database"        │
-  │  REGISTRIES        We go down, your agent loses its identity.   │
-  │  ──────────        Single point of failure.                     │
+  │  🏢 CENTRALIZED       "Your identity lives in our database"     │
+  │  REGISTRIES           We go down, your agent loses its identity.│
+  │  ──────────           Single point of failure.                  │
   │                                                                 │
-  │  TEEs              "The room is locked and tamper-proof"         │
-  │  ────              But who gave the worker their instructions?  │
-  │                    A locked room doesn't bound authorization.   │
+  │  🔒 TEEs              "The room is locked and tamper-proof"     │
+  │  ────                 But who gave the worker their             │
+  │                       instructions? A locked room doesn't       │
+  │                       bound authorization.                      │
   │                                                                 │
-  │  WORLD             "One human, one agent — verified"            │
-  │  AGENTKIT          But if that agent spawns a sub-agent?        │
-  │  ─────────         The verification stops. No cascade.          │
+  │  👁️ WORLD              "One human, one agent — verified"        │
+  │  AGENTKIT             But if that agent spawns a sub-agent?     │
+  │  ─────────            The verification stops. No cascade.       │
   │                                                                 │
   └─────────────────────────────────────────────────────────────────┘
 
-  THE GAP NOBODY IS FILLING:
+  🚨 THE GAP NOBODY IS FILLING:
 
   Human ──→ Agent A (verified) ──→ Agent B (???) ──→ Agent C (???)
 
@@ -85,73 +100,76 @@ Even well-intentioned agents, running correct code, can produce behaviors nobody
 
 ---
 
-### What MandateExecutionLayer does
+### ✅ What MandateExecutionLayer does
 
 One primitive. Three properties. Every agent action.
 
+<!-- KEY_COMPARISON: without_vs_with_mel -->
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                                                                      │
-│  WITHOUT MEL                         WITH MEL                        │
-│  ───────────                         ────────                        │
+│  ❌ WITHOUT MEL                       ✅ WITH MEL                    │
+│  ───────────                          ────────                       │
 │                                                                      │
-│  Human: "Do stuff"                   Human: Creates mandate          │
-│       ↓                                    ↓                         │
-│  Agent: does whatever                ┌─────────────────────────┐     │
-│       ↓                              │ MANDATE                 │     │
-│  Human: "What did you do?"           │ Can: send messages      │     │
-│       ↓                              │ Can: query APIs         │     │
-│  Agent: "Trust me"                   │ Cannot: spend money     │     │
-│                                      │ Cannot: admin actions   │     │
-│  No boundaries.                      │ Limit: 0.01 ETH/action │     │
-│  No verification.                    │ Expires: March 31       │     │
-│  No proof.                           │ Kill switch: anytime    │     │
-│                                      └────────────┬────────────┘     │
-│                                                   ↓                  │
-│                                      Agent: checks mandate FIRST     │
-│                                                   ↓                  │
-│                                      ┌─── Allowed? ───┐             │
-│                                      │                 │             │
-│                                     YES               NO             │
-│                                      ↓                 ↓             │
-│                                   Execute           Block            │
-│                                      ↓                 ↓             │
-│                                   Receipt           Receipt          │
-│                                   (compliant)       (blocked)        │
-│                                      ↓                 ↓             │
-│                                   PERMANENT, PUBLIC, VERIFIABLE      │
+│  Human: "Do stuff"                    Human: Creates mandate         │
+│       ↓                                     ↓                        │
+│  Agent: does whatever                 ┌─────────────────────────┐    │
+│       ↓                               │ 📜 MANDATE              │    │
+│  Human: "What did you do?"            │ ✅ Can: send messages    │    │
+│       ↓                               │ ✅ Can: query APIs      │    │
+│  Agent: "Trust me"                    │ ❌ Cannot: spend money   │    │
+│                                       │ ❌ Cannot: admin actions │    │
+│  No boundaries.                       │ 💰 Limit: 0.01 ETH/act  │    │
+│  No verification.                     │ ⏰ Expires: March 31     │    │
+│  No proof.                            │ 🛑 Kill switch: anytime  │    │
+│                                       └────────────┬────────────┘    │
+│                                                    ↓                 │
+│                                       Agent: checks mandate FIRST    │
+│                                                    ↓                 │
+│                                       ┌─── Allowed? ───┐            │
+│                                       │                 │            │
+│                                      ✅ YES           ❌ NO          │
+│                                       ↓                 ↓            │
+│                                    Execute           Block           │
+│                                       ↓                 ↓            │
+│                                    🧾 Receipt        🧾 Receipt     │
+│                                    (compliant)       (blocked)       │
+│                                       ↓                 ↓            │
+│                                    PERMANENT, PUBLIC, VERIFIABLE     │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 And verification **cascades** — the thing nobody else does:
 
+<!-- KEY_FEATURE: cascading_verification -->
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                                                                      │
-│  CASCADING VERIFICATION                                              │
+│  🔗 CASCADING VERIFICATION                                          │
 │                                                                      │
-│  Human (verified) ──→ Agent A ──→ Agent B ──→ Agent C                │
-│       │                  │           │           │                    │
-│       │                  │           │           │                    │
-│    ┌──┴───┐         ┌────┴───┐  ┌────┴───┐  ┌────┴───┐              │
-│    │ Self │         │Mandate │  │  Sub-  │  │  Sub-  │              │
-│    │Proof │         │ (root) │  │mandate │  │  sub-  │              │
-│    │  ✓   │         │   ✓    │  │   ✓    │  │mandate │              │
-│    └──────┘         └────────┘  └────────┘  │   ✓    │              │
-│                                             └────────┘              │
+│  Human (verified) ──→ Agent A ──→ Agent B ──→ Agent C               │
+│       │                  │           │           │                   │
+│       │                  │           │           │                   │
+│    ┌──┴───┐         ┌────┴───┐  ┌────┴───┐  ┌────┴───┐             │
+│    │ Self │         │Mandate │  │  Sub-  │  │  Sub-  │             │
+│    │Proof │         │ (root) │  │mandate │  │  sub-  │             │
+│    │  ✅  │         │   ✅   │  │   ✅   │  │mandate │             │
+│    └──────┘         └────────┘  └────────┘  │   ✅   │             │
+│                                             └────────┘             │
 │                                                                      │
-│  Every level traceable back to the original verified human.          │
-│  Sub-mandates can only be SUBSETS of their parent.                   │
-│  Revoking a parent revokes all children.                             │
+│  ✅ Every level traceable back to the original verified human.      │
+│  ✅ Sub-mandates can only be SUBSETS of their parent.               │
+│  ✅ Revoking a parent revokes all children.                         │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### The atomic insight
+### 💡 The atomic insight
 
+<!-- CORE_INSIGHT: action_level_verification_is_atomic_unit -->
 **Action-level verification is the atomic unit from which everything else derives.**
 
 ```
@@ -159,17 +177,17 @@ And verification **cascades** — the thing nobody else does:
 
   ┌─────────────────────────────────────────────────────────────────┐
   │                                                                 │
-  │  IDENTITY SIGNAL                                                │
+  │  🪪 IDENTITY SIGNAL                                             │
   │  ───────────────                                                │
   │  "A verified human authorized this agent"                       │
   │                                                    → AGENT KYC  │
   │                                                                 │
-  │  BEHAVIOR SIGNAL                                                │
+  │  📊 BEHAVIOR SIGNAL                                             │
   │  ───────────────                                                │
   │  "This agent has followed its mandate 498 out of 500 times"     │
   │                                                → REPUTATION     │
   │                                                                 │
-  │  COMPLETION SIGNAL                                              │
+  │  ✅ COMPLETION SIGNAL                                           │
   │  ─────────────────                                              │
   │  "All required actions for this task were completed in bounds"   │
   │                                          → TASK VERIFICATION    │
@@ -182,8 +200,9 @@ And verification **cascades** — the thing nobody else does:
 
 ---
 
-### One primitive, entire ecosystem
+### 🌳 One primitive, entire ecosystem
 
+<!-- ARCHITECTURE: core_to_extensions -->
 ```
                          MandateExecutionLayer
                          ─────────────────────
@@ -194,9 +213,9 @@ And verification **cascades** — the thing nobody else does:
                 │               │               │
                 ▼               ▼               ▼
          ┌────────────┐  ┌────────────┐  ┌────────────┐
-         │ KYC        │  │ REPUTATION │  │ TASK       │
-         │ GATEWAY    │  │ ORACLE     │  │ VERIFIER   │
-         │            │  │            │  │            │
+         │ 🪪 KYC     │  │ 📊 REPUTA- │  │ ✅ TASK    │
+         │ GATEWAY    │  │ TION       │  │ VERIFIER   │
+         │            │  │ ORACLE     │  │            │
          │ "Is this   │  │ "Can I     │  │ "Was this  │
          │  agent     │  │  trust     │  │  job done  │
          │  real?"    │  │  this      │  │  right?"   │
@@ -206,20 +225,20 @@ And verification **cascades** — the thing nobody else does:
                ▼               ▼               ▼
   ┌──────────────────────────────────────────────────────────┐
   │                                                          │
-  │  WHAT THIS UNLOCKS                                       │
+  │  🚀 WHAT THIS UNLOCKS                                    │
   │                                                          │
-  │  Remittance agents         (need KYC for compliance)     │
-  │  FX hedging agents         (need bounded authority)      │
-  │  DAO treasury autopilots   (need spending bounds)        │
-  │  Freelancer platforms      (need task verification)      │
-  │  Agent task marketplaces   (need all three)              │
-  │  Trading agent arenas      (need reputation for ranking) │
-  │  Agent discovery networks  (need trust for discovery)    │
-  │  Agent-hires-human markets (need identity + completion)  │
-  │  Savings agents            (need investment bounds)      │
-  │  No-code agent launchers   (need mandate as config)      │
+  │  💸 Remittance agents         (need KYC for compliance)  │
+  │  💱 FX hedging agents         (need bounded authority)   │
+  │  🏛️ DAO treasury autopilots   (need spending bounds)     │
+  │  👷 Freelancer platforms      (need task verification)   │
+  │  🏪 Agent task marketplaces   (need all three)           │
+  │  🏆 Trading agent arenas      (need reputation ranking)  │
+  │  🔍 Agent discovery networks  (need trust for discovery) │
+  │  🤝 Agent-hires-human markets (need identity+completion) │
+  │  🐖 Savings agents            (need investment bounds)   │
+  │  🛠️ No-code agent launchers   (need mandate as config)   │
   │                                                          │
-  │  14 out of 17 hackathon project ideas                    │
+  │  📌 14 out of 17 hackathon project ideas                 │
   │  need this layer to function safely.                     │
   │                                                          │
   └──────────────────────────────────────────────────────────┘
@@ -227,62 +246,65 @@ And verification **cascades** — the thing nobody else does:
 
 ---
 
-### The parallel
+### 🔄 The parallel
 
+<!-- ANALOGY: https_parallel -->
 ```
   ┌─────────────────────────────────────────────────────────────────┐
   │                                                                 │
-  │  1995                              2026                         │
-  │  ────                              ────                         │
+  │  📅 1995                              📅 2026                   │
+  │  ────                                 ────                      │
   │                                                                 │
-  │  "Type my credit card             "Let an AI agent              │
-  │   into a website?"                 manage my money?"            │
+  │  "Type my credit card                "Let an AI agent           │
+  │   into a website?"                    manage my money?"         │
   │                                                                 │
-  │  No one did.                       No one will.                 │
+  │  ❌ No one did.                       ❌ No one will.           │
   │                                                                 │
-  │  There was no HTTPS.               There's no mandate           │
-  │  No encryption.                    verification.                │
-  │  No proof the connection           No proof the agent           │
-  │  was secure.                       stayed in bounds.            │
+  │  There was no HTTPS.                  There's no mandate        │
+  │  No encryption.                       verification.             │
+  │  No proof the connection              No proof the agent        │
+  │  was secure.                          stayed in bounds.         │
   │                                                                 │
   │         ┌─────────────┐                   ┌─────────────┐       │
-  │         │   HTTPS     │                   │  MANDATE    │       │
+  │         │  🔐 HTTPS   │                   │  🛡️ MANDATE │       │
   │         │   arrived   │                   │  EXECUTION  │       │
   │         │             │                   │  LAYER      │       │
   │         └──────┬──────┘                   └──────┬──────┘       │
   │                │                                 │              │
   │                ▼                                 ▼              │
   │                                                                 │
-  │  E-commerce exploded.              Agent economy unlocks.       │
-  │  $6.3 trillion by 2024.           The trust layer was missing.  │
-  │                                    Now it's not.                │
+  │  💥 E-commerce exploded.              💥 Agent economy unlocks. │
+  │  $6.3 trillion by 2024.              The trust layer was       │
+  │                                       missing. Now it's not.   │
   │                                                                 │
   └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### What makes this real (not vaporware)
+### 🔬 What makes this real (not vaporware)
 
+<!-- PROOF: deployed_contracts -->
 ```
-  DEPLOYED AND DEMONSTRATED
+  ✅ DEPLOYED AND DEMONSTRATED
   ─────────────────────────
 
-  2 smart contracts          → Base Sepolia, verified
-  5-layer agent runtime      → TypeScript, working
-  7 onchain transactions     → Real demo, real receipts
-  5 scenarios tested         → Allowed, blocked, revoked — all receipted
+  📜 2 smart contracts          → Base Sepolia, verified
+  🏗️ 5-layer agent runtime      → TypeScript, working
+  🔗 7 onchain transactions     → Real demo, real receipts
+  🧪 5 scenarios tested         → Allowed, blocked, revoked — all receipted
 
   MandateRegistry:  0xA0F8E21B7DeafB489563B5428e42d26745c9EA52
   ActionReceipt:    0xEcAe9d43d49d02D1ED926A7Dce25e85a9B047a43
 
-  This is not a whitepaper. The primitive works today.
+  🚫 This is not a whitepaper. The primitive works today.
 ```
 
 ---
 
-### The roadmap
+### 🗺️ The roadmap
 
+<!-- ROADMAP: now_next_then -->
 ```
   NOW                    NEXT                     THEN
   ───                    ────                     ────
@@ -291,21 +313,23 @@ And verification **cascades** — the thing nobody else does:
                           Task Verification)
 
   ┌─────────────┐       ┌──────────────────┐     ┌──────────────────┐
-  │Mandate      │       │KYCGateway.sol    │     │Agent-hires-Agent │
-  │Registry.sol │──────→│ReputationOracle  │────→│demo on Celo      │
-  │Action       │       │.sol              │     │                  │
-  │Receipt.sol  │       │TaskVerifier.sol  │     │Full ecosystem:   │
-  │             │       │                  │     │task post → bid → │
-  │Base Sepolia │       │+ Celo deployment │     │verify → pay cUSD │
+  │📜 Mandate   │       │🪪 KYCGateway.sol │     │🤖 Agent-hires-  │
+  │Registry.sol │──────→│📊 Reputation     │────→│Agent demo on     │
+  │🧾 Action    │       │Oracle.sol        │     │Celo              │
+  │Receipt.sol  │       │✅ TaskVerifier   │     │                  │
+  │             │       │.sol              │     │Full ecosystem:   │
+  │Base Sepolia │       │                  │     │task post → bid → │
+  │             │       │+ Celo deployment │     │verify → pay cUSD │
   └─────────────┘       └──────────────────┘     └──────────────────┘
 
-  Cascading mandates     Agent KYC Gateway        Agent Mesh
-  (sub-agent             (identity-agnostic)      integration
+  🔗 Cascading mandates  🪪 Agent KYC Gateway    🌐 Agent Mesh
+  (sub-agent              (identity-agnostic)     integration
    verification)
 ```
 
 ---
 
+<!-- DOCUMENT_LINKS -->
 *For the full ideation journey and architecture: [IDEAS.md](IDEAS.md)*
 *For the non-technical explainer: [EXPLAINER.md](EXPLAINER.md)*
 *For technical implementation: [README.md](README.md)*
