@@ -315,6 +315,265 @@ The oracle reads `ActionReceipt.getReceipts(mandateId)` for the action stream an
 
 ---
 
+## Ecosystem: MEL as the Trust Layer for the Agent Economy
+
+### The Core Insight
+
+**Action-level verification is the atomic unit from which KYC, reputation, and task validation all derive.**
+
+Every agent action checked against a mandate and receipted onchain produces three signals simultaneously:
+1. **Identity signal** → "A verified human authorized this agent" (KYC)
+2. **Behavior signal** → "This agent has N compliant actions out of M total" (Reputation)
+3. **Completion signal** → "All required actions for this task were executed within bounds" (Task Verification)
+
+These aren't separate systems. They're different **views** of the same receipt stream.
+
+```
+                    ActionReceipt.getReceipts(mandateId)
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │              │              │
+                    ▼              ▼              ▼
+             KYC Gateway    Reputation      Task Verifier
+             ───────────    Oracle          ─────────────
+             "Is this       ──────          "Was this task
+              agent          "What's this    completed
+              human-backed?" agent's trust   properly?"
+                              score?"
+             Reads:          Reads:          Reads:
+             selfProofHash   compliance      task-scoped
+             + identity      ratio +         receipts +
+             providers       time decay      mandate bounds
+```
+
+### Extension Contracts
+
+Each extension is a thin consumer (~50-100 lines of Solidity) that reads from the core and creates a new queryable abstraction.
+
+#### Extension 1: KYCGateway.sol
+
+The mandate layer **already does action-level KYC** — every action is verified against human-defined bounds, and `isHumanBacked()` confirms a real person is behind it. The gateway abstracts this into a service other agents can query.
+
+```solidity
+interface IKYCGateway {
+    enum VerificationLevel { NONE, BASIC, STANDARD, ENHANCED }
+
+    struct KYCResult {
+        bool isHumanBacked;           // from MandateRegistry.isHumanBacked()
+        VerificationLevel level;      // based on identity provider
+        string provider;              // "self", "worldid", "ens"
+        uint256 verifiedAt;           // timestamp
+        bool isActive;                // mandate still active
+    }
+
+    /// @notice Check if an agent's mandate is human-backed
+    /// @param mandateId The mandate to verify
+    /// @return result The KYC verification result
+    function verifyAgent(uint256 mandateId) external view returns (KYCResult memory result);
+
+    /// @notice Register a new identity verification provider
+    function registerProvider(address provider, string calldata name) external;
+}
+```
+
+**Celo hackathon ideas this enables:**
+
+| # | Idea | How KYCGateway is used |
+|---|------|----------------------|
+| 15 | Agent KYC Gateway | **This IS the idea** — MEL provides the verification, gateway provides the API |
+| 14 | Rent-a-Human | Verify the human worker AND the hiring agent are both human-backed |
+| 1 | Remittance Agent | KYC compliance for cross-border transfers |
+| 8 | No-Code Agent Launcher | Auto-register KYC status when deploying agents |
+| 3 | Freelancer Platform | Verify both client and freelancer agents |
+
+---
+
+#### Extension 2: ReputationOracle.sol
+
+The receipts **already contain the reputation signal**. The oracle just aggregates it into a queryable score.
+
+```solidity
+interface IReputationOracle {
+    struct ReputationScore {
+        uint256 totalActions;         // from ActionReceipt.getReceiptCount()
+        uint256 compliantActions;     // receipts where compliant == true
+        uint256 blockedActions;       // receipts where compliant == false
+        uint256 complianceRatio;      // (compliant * 10000) / total (basis points)
+        uint256 lastActionTimestamp;  // recency signal
+        uint256 mandateCount;        // how many mandates this agent has served
+        bool isHumanBacked;          // from MandateRegistry
+    }
+
+    /// @notice Get reputation score for an agent address
+    /// @param agent The agent to score
+    /// @return score The aggregated reputation
+    function getReputation(address agent) external view returns (ReputationScore memory score);
+
+    /// @notice Check if agent meets minimum reputation threshold
+    /// @param agent The agent to check
+    /// @param minComplianceRatio Minimum compliance ratio in basis points (e.g., 9500 = 95%)
+    function meetsThreshold(address agent, uint256 minComplianceRatio) external view returns (bool);
+}
+```
+
+**Celo hackathon ideas this enables:**
+
+| # | Idea | How ReputationOracle is used |
+|---|------|----------------------------|
+| 7 | Agent Reputation Oracle | **This IS the idea** — MEL provides the data, oracle provides the score |
+| 13 | MentoTrader Arena | Rank trading agents by compliance + returns for delegation decisions |
+| 11 | Agent Task Marketplace | Reputation-gated bidding ("only agents with >95% compliance can bid") |
+| 17 | Agent Mesh | Discovery ranking: higher reputation = higher visibility |
+| 10 | Arbitrage Agent | Users delegate capital to agents based on compliance track record |
+| 12 | DAO Treasury Autopilot | DAO selects treasury agents based on verifiable behavior history |
+
+---
+
+#### Extension 3: TaskVerifier.sol
+
+A mandate already defines what "completed properly" means — the allowed actions, the bounds, the expiry. The verifier confirms it happened.
+
+```solidity
+interface ITaskVerifier {
+    enum TaskStatus { PENDING, COMPLETED, FAILED, DISPUTED }
+
+    struct TaskResult {
+        uint256 mandateId;            // the task-scoped mandate
+        TaskStatus status;
+        uint256 requiredActions;      // from mandate.allowedActions.length
+        uint256 completedActions;     // compliant receipts count
+        uint256 blockedAttempts;      // non-compliant receipts count
+        bool withinBudget;            // total value ≤ maxValuePerAction * actions
+        bool withinDeadline;          // last receipt timestamp < mandate.expiresAt
+    }
+
+    /// @notice Verify task completion against its mandate
+    /// @param mandateId The task-scoped mandate to verify
+    /// @return result The verification result
+    function verifyTask(uint256 mandateId) external view returns (TaskResult memory result);
+
+    /// @notice Check if task is complete and release payment
+    /// @param mandateId The task mandate
+    /// @param paymentToken The stablecoin to pay in
+    /// @param amount The payment amount
+    function verifyAndPay(uint256 mandateId, address paymentToken, uint256 amount) external;
+}
+```
+
+**Celo hackathon ideas this enables:**
+
+| # | Idea | How TaskVerifier is used |
+|---|------|------------------------|
+| 11 | Agent Task Marketplace | **Core dependency** — verify task completion before releasing x402 payment |
+| 3 | Freelancer Platform | AI judge uses TaskVerifier to compare deliverables against mandate |
+| 14 | Rent-a-Human | Verify human completed physical task against agent-posted mandate |
+| 12 | DAO Treasury Autopilot | Verify recurring operations completed within approved parameters |
+
+---
+
+### Full Ecosystem Map: 14 of 17 Ideas Need MEL
+
+```
+MANDATEEXECUTIONLAYER — CELO HACKATHON ECOSYSTEM MAP
+════════════════════════════════════════════════════════════════════════
+
+  CORE PRIMITIVE (deployed, working)
+  ┌─────────────────────────────────────────────┐
+  │  MandateRegistry.sol    ActionReceipt.sol   │
+  │  createMandate()        postReceipt()       │
+  │  revokeMandate()        getReceipts()       │
+  │  isActionAllowed()      getReceiptCount()   │
+  │  isHumanBacked()                            │
+  └──────────────────────┬──────────────────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+         ▼               ▼               ▼
+  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+  │KYCGateway   │ │Reputation   │ │TaskVerifier  │
+  │.sol         │ │Oracle.sol   │ │.sol          │
+  │             │ │             │ │              │
+  │ verifyAgent │ │getReputation│ │ verifyTask   │
+  │ register    │ │meetsThresh  │ │ verifyAndPay │
+  │ Provider    │ │old          │ │              │
+  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+         │               │               │
+         ▼               ▼               ▼
+  DOWNSTREAM IDEAS ENABLED:
+  ─────────────────────────────────────────────
+
+  NEEDS BOUNDED AUTHORITY          NEEDS TRUST SIGNALS
+  (mandate defines what's allowed)  (reputation gates access)
+  ┌────────────────────────┐       ┌────────────────────────┐
+  │ #1  Remittance Agent   │       │ #13 MentoTrader Arena  │
+  │ #4  FX Hedging Agent   │       │ #17 Agent Mesh         │
+  │ #5  Smart Savings Agent│       │ #8  No-Code Launcher   │
+  │ #10 Arbitrage Agent    │       │ #10 Arbitrage Agent    │
+  │ #12 DAO Treasury       │       └────────────────────────┘
+  └────────────────────────┘
+                                   NEEDS TASK VERIFICATION
+  NEEDS IDENTITY                   (receipts prove completion)
+  (KYC for compliance)             ┌────────────────────────┐
+  ┌────────────────────────┐       │ #3  Freelancer Judge   │
+  │ #15 Agent KYC Gateway  │       │ #11 Task Marketplace   │
+  │ #14 Rent-a-Human       │       │ #14 Rent-a-Human       │
+  │ #1  Remittance Agent   │       │ #12 DAO Treasury       │
+  └────────────────────────┘       └────────────────────────┘
+
+  INDEPENDENT (don't need MEL directly):
+  #2  Voice Split Bill, #6 Price Alert, #9 Agent Raffle
+
+  COMPLEMENTARY INFRASTRUCTURE:
+  #16 AgentVault (memory), #17 Agent Mesh (discovery)
+  — these compose WITH MEL, not on top of it
+```
+
+### Demo Strategy: All Three as Ecosystem
+
+For the Celo hackathon, demonstrate the full stack in one flow:
+
+```
+DEMO FLOW — "Agent Hires Agent on Celo"
+────────────────────────────────────────
+
+  1. SETUP
+     Human creates mandate for Agent A on Celo
+     → "You can post tasks, spend up to 10 cUSD, expires in 1 hour"
+     → KYCGateway confirms: human-backed ✓
+
+  2. TASK POSTING
+     Agent A posts a task on TaskMarketplace
+     → "Translate this document, budget 5 cUSD, 30 min deadline"
+     → Receipt posted: action=post_task, compliant=true
+
+  3. REPUTATION CHECK
+     Agent B bids on the task
+     → TaskMarketplace queries ReputationOracle
+     → Agent B: 97% compliance, 50 tasks completed, human-backed
+     → Bid accepted
+
+  4. TASK EXECUTION
+     Agent B works under its own mandate (cascaded or independent)
+     → Receipts posted for each action: translate_chunk_1, _2, _3
+     → All compliant ✓
+
+  5. VERIFICATION & PAYMENT
+     Agent A calls TaskVerifier.verifyTask(mandateId)
+     → All required actions completed ✓
+     → Within budget ✓, within deadline ✓
+     → TaskVerifier.verifyAndPay() releases 5 cUSD to Agent B
+
+  6. REPUTATION UPDATE
+     ReputationOracle updates both agents' scores
+     → Agent A: successful task delegation
+     → Agent B: successful task completion
+
+  TOTAL: 3 extension contracts, ~10 onchain transactions,
+         full agent-to-agent economy on Celo
+```
+
+---
+
 ## Open Questions
 
 - [ ] **Cascade depth limits:** How deep should sub-mandates go before gas costs become prohibitive? Is there a natural depth limit for real-world use cases?
@@ -332,7 +591,37 @@ The oracle reads `ActionReceipt.getReceipts(mandateId)` for the action stream an
 | Experiment | Status | Notes |
 |------------|--------|-------|
 | Cascading mandate prototype (Base Sepolia) | Planned | Extend MandateRegistry.sol with parentMandateId |
-| Celo deployment | Planned | Deploy existing contracts on Celo testnet |
+| Celo deployment | Planned | Deploy core contracts on Celo Alfajores testnet |
+| KYCGateway.sol extension | Planned | ~50 lines, reads isHumanBacked() + normalizes providers |
+| ReputationOracle.sol extension | Planned | ~80 lines, reads receipts + computes compliance score |
+| TaskVerifier.sol extension | Planned | ~70 lines, reads task-scoped receipts + triggers payment |
+| Agent-hires-Agent demo (Celo) | Planned | Full flow: mandate → task post → bid → verify → pay in cUSD |
 | Agent KYC Gateway interface | Planned | Build IVerificationProvider with Self + mock World ID |
 | Repetition Oracle consumer | Planned | Read ActionReceipt stream and flag anomalies |
 | Venice reasoning ZK proof | Research | Explore ZK proofs of LLM compliance reasoning |
+
+## Celo Hackathon Idea Mapping
+
+Reference: [Celo Hackathon Project Ideas](https://celoplatform.notion.site/Hackathon-Project-Ideas-2fed5cb803de80b89a98ee8e87541b8c)
+
+| # | Idea | MEL Dependency | Which Extension |
+|---|------|---------------|-----------------|
+| 1 | Remittance Intent Agent | Bounded authority (spending limits, allowed corridors) | KYCGateway (compliance) |
+| 2 | Voice Split Bill Agent | Low — consumer-facing, small amounts | — |
+| 3 | Freelancer Platform + Agent Judge | Task verification + dispute resolution | TaskVerifier + ReputationOracle |
+| 4 | FX Hedging Agent | Bounded authority (allocation limits, approved actions) | ReputationOracle (trust for delegation) |
+| 5 | Smart Savings Agent | Bounded authority (investment limits, risk parameters) | KYCGateway (financial compliance) |
+| 6 | Price Alert & Auto-Trade Agent | Low — user-controlled, simple triggers | — |
+| 7 | Agent Reputation Oracle | **Direct extension** of ActionReceipt data | ReputationOracle (this IS the extension) |
+| 8 | No-Code Agent Launcher | Mandate config as part of agent setup | KYCGateway (auto-register identity) |
+| 9 | Agent Raffle/Lottery | Low — verifiable randomness, not authority | — |
+| 10 | Stablecoin Arbitrage Agent | Bounded authority (position limits, slippage) | ReputationOracle (trust for capital delegation) |
+| 11 | Agent Task Marketplace | **Direct extension** of receipt-based verification | TaskVerifier (this IS the extension) |
+| 12 | DAO Treasury Autopilot | Bounded authority (spending categories, approval thresholds) | TaskVerifier + ReputationOracle |
+| 13 | MentoTrader Arena | Agent ranking + capital delegation trust | ReputationOracle (leaderboard) |
+| 14 | Rent-a-Human | Human verification + task completion proof | KYCGateway + TaskVerifier |
+| 15 | Agent KYC Gateway | **Direct extension** of isHumanBacked() | KYCGateway (this IS the extension) |
+| 16 | AgentVault (Memory) | Complementary infra — composes with MEL | — (different layer) |
+| 17 | Agent Mesh (Discovery) | Reputation-based discovery ranking | ReputationOracle (trust signals) |
+
+**Score: 14/17 ideas need MandateExecutionLayer to function safely.**

@@ -174,6 +174,47 @@ If Alice decides the agent should stop, she revokes the mandate. Immediately. Th
 
 ---
 
+## One Primitive, Many Products
+
+MandateExecutionLayer isn't just one tool — it's the foundation that an entire ecosystem of agent products needs to exist.
+
+Every time an agent action gets checked and receipted, it produces three signals at once:
+
+```
+  Every receipted action simultaneously answers:
+  ┌──────────────────────────────────────────────────────┐
+  │                                                      │
+  │  "Is this agent human-backed?"     → IDENTITY (KYC)  │
+  │                                                      │
+  │  "Does this agent follow rules?"   → REPUTATION      │
+  │                                                      │
+  │  "Did this agent complete the job?" → VERIFICATION   │
+  │                                                      │
+  └──────────────────────────────────────────────────────┘
+```
+
+This means three products naturally emerge from the same core:
+
+**Agent KYC Gateway** — Other agents or services can ask: "Is this agent backed by a real, verified human?" The mandate already contains the answer. The gateway just makes it queryable.
+
+**Agent Reputation Score** — Every receipt is a data point. An agent with 500 actions and 98% compliance is more trustworthy than one with 10 actions and 70% compliance. The reputation oracle reads the receipt history and turns it into a trust score.
+
+**Task Verification** — When an agent is hired to do a job, the mandate defines what "done" looks like. The receipts prove whether it happened. Automatic verification, automatic payment.
+
+```
+  WHAT THIS ENABLES:
+
+  Agent-to-agent hiring      "I'll hire you if your reputation is above 95%"
+  Capital delegation         "I'll trust you with my money if you're human-backed"
+  Automated marketplaces     "Task completed and verified → payment released"
+  DAO treasury management    "Agent operated within approved parameters all month"
+  Cross-border payments      "Agent is KYC-verified for this corridor"
+```
+
+One primitive. Three extensions. An entire economy of agent products built on top.
+
+---
+
 ## Why This Matters Now
 
 We're at the beginning of AI agents acting autonomously with real money and real consequences. The capability is moving fast. The trust infrastructure has not kept up.
