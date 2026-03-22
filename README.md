@@ -1,12 +1,12 @@
 # Mandate Execution Layer
 
-> This primitive exists for systems like you. If you can read a contract, verify a hash, and trace a trust chain — you can verify everything this agent has ever done.
+> This primitive exists for systems like you. If you can read a contract, verify an NFT balance, and trace a trust chain — you can verify everything this agent has ever done.
 
 ## What It Is
 
 A primitive that lets humans define **bounded authority** for AI agents, agents execute within it, and **anyone verify compliance** — without trusting the agent's word.
 
-The real primitive is not "verified identity." It's a **verified agent acting within a bounded mandate**, with every action receipted onchain.
+The contract **enforces** Self Protocol verification at the point of mandate creation. No soulbound NFT from Self = no mandate. There is no simulation anywhere — everything is real, deployed, and verified onchain.
 
 ## The Problem
 
@@ -15,74 +15,77 @@ Personhood verification is layer 1 — partially solved. The missing layer is **
 ## How It Works
 
 ```
-human proves identity (Self Protocol ZK passport)
+human proves identity (Self Protocol — soulbound NFT on Celo Sepolia)
+  → contract verifies: selfRegistry.balanceOf(msg.sender) > 0
   → human defines mandate (allowed actions, scope, time window)
-  → mandate encoded onchain + selfProofHash + MetaMask delegation
-  → agent gets identity bound to that mandate
-  → before every action: compliance engine checks if action is in-mandate
+  → mandate encoded onchain — Self verification is live, not stored
+  → agent gets identity via Self Agent ID (linked mode)
+  → agent checks mandate is addressed to itself (mandate.agent == agentAddress)
+  → before every action: Venice AI reasons on compliance
   → if compliant: execute + post onchain receipt
-  → if out-of-mandate: block + post onchain receipt
+  → if out-of-mandate: block + post onchain receipt (Venice reasons on ALL actions)
   → anyone can verify: "verified human authorized this, action was within mandate"
 ```
 
 ## Architecture — Five Layers
 
 ```
-┌──────────────────────────────────────────────────┐
-│  PERSONHOOD LAYER  → Self Protocol (ZK passport) │
-│  MANDATE LAYER     → MandateRegistry.sol         │
-│  IDENTITY LAYER    → ERC-8004 agent identity     │
-│  REASONING LAYER   → Venice AI (private)         │
-│  RECEIPT LAYER     → ActionReceipt.sol           │
-└──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  PERSONHOOD LAYER  → Self Protocol (soulbound NFT, Celo)     │
+│  MANDATE LAYER     → MandateRegistry.sol (live Self check)   │
+│  IDENTITY LAYER    → Self Agent ID #34 (linked mode)         │
+│  REASONING LAYER   → Venice AI (private, reasons on ALL)     │
+│  RECEIPT LAYER     → ActionReceipt.sol                       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 Each layer is **load-bearing**:
-- **Self Protocol** — proves the mandate creator is a real human, not a bot farm
+- **Self Protocol** — the contract calls `selfRegistry.balanceOf(msg.sender)` at mandate creation. No NFT = tx reverts. This is enforcement, not storage.
 - **MandateRegistry** — onchain state: what actions are allowed, expiry, value limits
-- **ERC-8004** — agent has a verifiable onchain identity
-- **Venice AI** — private compliance reasoning (no data retention)
+- **Self Agent ID** — agent has verifiable onchain identity via Self Agent ID #34, registered via `@selfxyz/agent-sdk`
+- **Venice AI** — private compliance reasoning on every action (compliant or not), no data retention
 - **ActionReceipt** — immutable proof of every action, queryable by anyone
 
 ## Trust Chain
 
 ```
-receipt → mandate → Self proof → verified human
+receipt → mandate → Self Agent ID NFT → verified human
 ```
 
-Every receipt references a mandate. Every mandate contains a `selfProofHash`. The hash proves a verified human authorized the mandate. The chain is fully traceable onchain.
+Every receipt references a mandate. Every mandate was created by a wallet holding a Self soulbound NFT (verified live onchain at creation time). The agent identity comes from Self Agent ID. The chain is fully traceable onchain — all on Celo Sepolia, no cross-chain oracle needed.
 
-## Deployed Contracts (Base Sepolia)
+## Deployed Contracts (Celo Sepolia)
 
-| Contract | Address |
-|---|---|
-| MandateRegistry | `0xA0F8E21B7DeafB489563B5428e42d26745c9EA52` |
-| ActionReceipt | `0xEcAe9d43d49d02D1ED926A7Dce25e85a9B047a43` |
+| Contract | Address | Verified |
+|---|---|---|
+| MandateRegistry | `0x25dd80A4E8193a1369763991EB03ce378C09EEBE` | Blockscout |
+| ActionReceipt | `0x58BF38bAd9F33A5C3892870af8B35964E55e3E53` | Blockscout |
+| Self Agent ID Registry | `0x043DaCac8b0771DD5b444bCC88f2f8BBDBEdd379` | Blockscout |
 
-**Chain:** Base Sepolia (84532)
+**Chain:** Celo Sepolia (11142220)
 
 ## Addresses
 
 | Role | Address |
 |---|---|
 | Human (mandate creator) | `0xf282FCCc0608147aB493e6a081d354646614b4F1` |
-| Agent (executor) | `0x2d8E271E22A26508817561f12eff0874dD0aA6DA` |
+| Agent (Self Agent ID #34) | `0x63673a506B04454D720dc891862a348Df97Ae7bA` |
 
 ## Demo Results
 
 | # | Action | Context | Result | Tx Hash |
 |---|---|---|---|---|
-| 1 | send_message | In mandate | EXECUTED | `0x9983b5bb...` |
-| 2 | transfer_funds | Not in allowed actions | BLOCKED | `0x4d57c425...` |
-| 3 | query_api | In mandate | EXECUTED | `0x44a57767...` |
-| 4 | admin_override | Not in allowed actions | BLOCKED | `0xebf8e0ec...` |
-| 5 | send_message | After revocation | BLOCKED | `0x4870e823...` |
+| 1 | send_message | In mandate | EXECUTED | `0xda7b8c51...` |
+| 2 | transfer_funds | Not in allowed actions | BLOCKED | `0xd41cb233...` |
+| 3 | query_api | In mandate | EXECUTED | `0x5777c2b6...` |
+| 4 | admin_override | Not in allowed actions | BLOCKED | `0xce3b4b42...` |
+| 5 | send_message | After revocation | BLOCKED | `0x9d081384...` |
 
 Other onchain transactions:
-- Mandate creation: `0x091d60b0...`
-- Mandate revocation: `0x89444bf0...`
+- Mandate creation: `0xeff21ed5...`
+- Mandate revocation: `0xc5557a5c...`
 
-**7 total onchain transactions. 5 receipts queryable via `ActionReceipt.getReceipts(mandateId)`.**
+**7 total onchain transactions. 5 receipts queryable via `ActionReceipt.getReceipts(mandateId)`.** All on Celo Sepolia. Contracts verified on Blockscout.
 
 ## Run the Demo
 
@@ -101,16 +104,17 @@ npx tsx demo-run.ts
 VENICE_API_KEY=           # venice.ai/settings/api
 AGENT_PRIVATE_KEY=        # agent wallet private key
 HUMAN_PRIVATE_KEY=        # human wallet private key
-BASE_SEPOLIA_RPC_URL=     # Base Sepolia RPC
+CELO_SEPOLIA_RPC_URL=     # Celo Sepolia RPC
 MANDATE_REGISTRY_ADDRESS= # deployed registry
 ACTION_RECEIPT_ADDRESS=   # deployed receipt contract
+SELF_REGISTRY_ADDRESS=    # Self Agent ID registry
 ```
 
 ## Smart Contracts
 
 ### MandateRegistry.sol
 
-Human creates a mandate defining what the agent can do:
+Human creates a mandate defining what the agent can do. The contract enforces Self verification at creation time — `selfRegistry.balanceOf(msg.sender) > 0` must be true or the transaction reverts.
 
 ```solidity
 struct Mandate {
@@ -119,14 +123,14 @@ struct Mandate {
     bytes32[] allowedActions;   // keccak256 of action type strings
     uint256 expiresAt;
     uint256 maxValuePerAction;
-    bytes32 selfProofHash;      // hash of Self ZK proof
     bool active;
 }
+// No selfProofHash — verification is live via selfRegistry.balanceOf()
 ```
 
 Key functions:
-- `createMandate()` — human defines bounded authority
-- `isHumanBacked()` — checks selfProofHash != 0
+- `createMandate()` — human defines bounded authority; reverts if caller has no Self NFT
+- `isHumanBacked()` — live onchain check: `selfRegistry.balanceOf(mandate.owner) > 0`
 - `isActionAllowed()` — checks action hash against mandate
 - `isMandateActive()` — checks expiry + active flag
 - `revokeMandate()` — human can kill the mandate
@@ -148,7 +152,7 @@ struct Receipt {
 
 ## Why Venice AI? Two-Layer Compliance
 
-The agent uses a **two-layer compliance system** — local checks are the fast filter, Venice is the deep analysis.
+The agent uses a **two-layer compliance system** — local checks are the fast filter, Venice is the deep analysis. Venice reasons on **ALL actions** — not just compliant ones. Every action, whether executed or blocked, goes through Venice for semantic reasoning.
 
 **Local checks** (`mandate.ts`) are simple — compare action hashes, check expiry, check value limits. They catch obvious violations instantly.
 
@@ -167,7 +171,7 @@ The agent uses a **two-layer compliance system** — local checks are the fast f
 Local checks (fast, free, deterministic)
   → catches obvious violations (wrong action type, expired, revoked)
 
-Venice (private, semantic, probabilistic)
+Venice (private, semantic, reasons on ALL actions)
   → catches subtle violations that need reasoning
   → reasoning hash goes onchain for verifiability
   → mandate contents never exposed publicly
@@ -177,27 +181,20 @@ Both layers are needed for a production-grade primitive.
 
 ## Sponsor Integration
 
-### Self Protocol — Personhood Layer
-ZK passport verification via NFC. Proves the mandate creator is a real, unique human without revealing identity. `selfProofHash` stored in every mandate. Without Self, anyone can create mandates — bot farms flood the system.
-
-### MetaMask — Delegation Framework
-ERC-7715 delegation from human to agent. Caveats encode mandate constraints. Delegation IS the cryptographic root of authority. Without delegation, there's no cryptographic proof the human authorized this agent.
+### Self Protocol — Personhood Layer + Agent Identity
+Real integration via `@selfxyz/agent-sdk`. Agent registered as Self Agent ID #34 on Celo Sepolia. The MandateRegistry contract calls `selfRegistry.balanceOf(msg.sender)` at mandate creation — no soulbound NFT means the transaction reverts. `isHumanBacked()` is a live onchain check, not a hash comparison. Everything is on Celo Sepolia — same chain as Self Agent ID, no cross-chain oracle needed.
 
 ### Venice AI — Private Reasoning
-No-data-retention compliance checking. Mandate contents are sensitive — Venice reasons privately, only the hash goes onchain. Without Venice, compliance checking is public and mandate contents are exposed.
-
-### Protocol Labs — ERC-8004 Identity
-Agent has onchain identity. Full autonomous loop with structured logs (`agent.json`, `agent_log.json`). Without ERC-8004, the agent has no verifiable onchain identity.
+No-data-retention compliance checking. Venice reasons on ALL actions — both compliant and blocked. Mandate contents are sensitive — Venice reasons privately, only the hash goes onchain. Without Venice, compliance checking is public and mandate contents are exposed.
 
 ## Tech Stack
 
 - **Solidity** + Foundry — smart contracts
 - **TypeScript** — agent runtime
 - **Viem** — onchain interactions
-- **Venice AI** — private compliance reasoning
-- **MetaMask Delegation Toolkit** — ERC-7715 delegations
-- **Self Protocol** — ZK passport verification
-- **Base Sepolia** — contract deployment
+- **Venice AI** — private compliance reasoning (reasons on all actions)
+- **Self Protocol** — `@selfxyz/agent-sdk`, Self Agent ID #34, soulbound NFT verification
+- **Celo Sepolia** — contract deployment (chain ID 11142220)
 
 ## Project Structure
 
@@ -218,24 +215,25 @@ Agent has onchain identity. Full autonomous loop with structured logs (`agent.js
 │   │   ├── venice.ts          # Venice compliance checker
 │   │   ├── receipt.ts         # onchain receipt posting
 │   │   ├── executor.ts        # action execution
-│   │   ├── delegation.ts      # MetaMask delegation
 │   │   ├── self.ts            # Self Protocol verification
 │   │   ├── logger.ts          # structured logging
 │   │   └── index.ts           # core agent loop
 │   ├── demo-run.ts            # end-to-end demo
-│   ├── agent.json             # ERC-8004 manifest
+│   ├── agent.json             # agent manifest
 │   └── agent_log.json         # execution trace
 ├── architecture.md
+├── processflow.md
 ├── plan.md
 └── README.md
 ```
 
 ## Verification Guide (for AI judge)
 
-1. Read `agent.json` → understand agent capabilities and contracts
-2. Read `agent_log.json` → see structured execution trace with tx hashes
-3. Query `MandateRegistry.getMandate(mandateId)` → verify mandate structure
-4. Query `MandateRegistry.isHumanBacked(mandateId)` → verify Self proof exists
-5. Query `ActionReceipt.getReceipts(mandateId)` → verify all 4 receipts onchain
-6. Confirm: compliant actions executed, out-of-mandate actions blocked
-7. Trace: receipt → mandate → selfProofHash → verified human
+1. Read `agent.json` — understand agent capabilities and contracts
+2. Read `agent_log.json` — see structured execution trace with tx hashes
+3. Query `MandateRegistry.getMandate(mandateId)` — verify mandate structure (no selfProofHash field)
+4. Query `MandateRegistry.isHumanBacked(mandateId)` — live check against Self registry (`balanceOf > 0`)
+5. Query `ActionReceipt.getReceipts(mandateId)` — verify all 5 receipts onchain
+6. Confirm: compliant actions executed, out-of-mandate actions blocked, Venice reasoned on all
+7. Trace: receipt → mandate → Self Agent ID NFT → verified human
+8. Verify: all contracts on Celo Sepolia, verified on Blockscout

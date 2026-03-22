@@ -13,7 +13,7 @@ function localComplianceCheck(
     allowedActions: string[]
     expiresAt: bigint
     maxValuePerAction: bigint
-    selfProofHash: string
+    humanBacked: boolean
   },
   proposedAction: {
     type: string
@@ -21,8 +21,7 @@ function localComplianceCheck(
     estimatedValue?: number
   }
 ): ComplianceDecision {
-  const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000'
-  if (mandate.selfProofHash === zeroHash) {
+  if (!mandate.humanBacked) {
     return { compliant: false, reason: 'mandate not human-backed', confidence: 1.0 }
   }
 
@@ -51,7 +50,7 @@ export async function checkCompliance(
     allowedActionNames?: string[]
     expiresAt: bigint
     maxValuePerAction: bigint
-    selfProofHash: string
+    humanBacked: boolean
     localCheckResult?: { passed: boolean; reason: string }
   },
   proposedAction: {
@@ -96,7 +95,7 @@ confidence should be 0.0 to 1.0.`,
                 allowedActionHashes: mandate.allowedActions,
                 expiresAt: mandate.expiresAt.toString(),
                 maxValuePerAction: mandate.maxValuePerAction.toString(),
-                isHumanBacked: mandate.selfProofHash !== '0x0000000000000000000000000000000000000000000000000000000000000000',
+                isHumanBacked: mandate.humanBacked,
               },
               proposedAction,
               currentTimestamp: Math.floor(Date.now() / 1000),

@@ -1,72 +1,53 @@
-import { keccak256, encodePacked } from 'viem'
+import { createPublicClient, http } from 'viem'
+import { SELF_REGISTRY_ADDRESS } from './config.js'
 
-/**
- * Self Protocol integration for ZK passport verification.
- *
- * Production flow:
- * 1. Human scans NFC passport via Self mobile app
- * 2. ZK proof generated — proves humanity without revealing identity
- * 3. Proof sent to backend verifier
- * 4. Proof hash stored in MandateRegistry alongside mandate
- *
- * For the hackathon demo, we simulate the verification and generate
- * a deterministic selfProofHash. When Self SDK is available with credits,
- * swap in the real SelfBackendVerifier.
- */
+const CELO_RPC = 'https://forno.celo-sepolia.celo-testnet.org'
+
+const celoClient = createPublicClient({
+  transport: http(CELO_RPC),
+})
 
 export interface SelfVerificationResult {
   valid: boolean
-  selfProofHash: `0x${string}` | null
-  provider: 'self-protocol' | 'self-protocol-simulated'
+  nftBalance: number
+  registry: string
+  chainId: number
 }
 
-// Simulated verification for demo — generates deterministic proof hash
-export async function verifySelfProof(userId: string): Promise<SelfVerificationResult> {
-  // In production:
-  // const verifier = new SelfBackendVerifier({
-  //   scope: 'mandate-execution-layer',
-  //   endpoint: 'https://your-api.com/api/verify-self',
-  //   minimumAge: 18,
-  //   enableOfac: true
-  // })
-  // const result = await verifier.verify(proof, publicSignals)
+/**
+ * Check if a human has a Self Agent ID NFT onchain.
+ * This is just a read — the real enforcement is in MandateRegistry.createMandate()
+ * which calls selfRegistry.balanceOf(msg.sender) directly.
+ */
+export async function verifySelfAgentId(humanAddress: string): Promise<SelfVerificationResult> {
+  console.log(`  [Self Protocol] Checking Self Agent ID for ${humanAddress}`)
+  console.log(`  [Self Protocol] Registry: ${SELF_REGISTRY_ADDRESS} (Celo Sepolia)`)
 
-  console.log(`  [Self Protocol] Verifying identity for ${userId}`)
-  console.log('  [Self Protocol] ZK passport proof validated (simulated)')
+  try {
+    const balance = await celoClient.readContract({
+      address: SELF_REGISTRY_ADDRESS,
+      abi: [{
+        type: 'function',
+        name: 'balanceOf',
+        inputs: [{ name: 'owner', type: 'address' }],
+        outputs: [{ name: '', type: 'uint256' }],
+        stateMutability: 'view',
+      }],
+      functionName: 'balanceOf',
+      args: [humanAddress as `0x${string}`],
+    })
 
-  const selfProofHash = keccak256(
-    encodePacked(['string', 'string'], ['self_zk_proof_', userId])
-  )
+    const hasNFT = balance > 0n
+    console.log(`  [Self Protocol] NFT balance: ${balance} — ${hasNFT ? 'VERIFIED HUMAN' : 'NOT VERIFIED'}`)
 
-  return {
-    valid: true,
-    selfProofHash,
-    provider: 'self-protocol-simulated',
+    return {
+      valid: hasNFT,
+      nftBalance: Number(balance),
+      registry: SELF_REGISTRY_ADDRESS,
+      chainId: 11142220,
+    }
+  } catch (err) {
+    console.log(`  [Self Protocol] Error: ${err instanceof Error ? err.message : err}`)
+    return { valid: false, nftBalance: 0, registry: SELF_REGISTRY_ADDRESS, chainId: 11142220 }
   }
 }
-
-// Real Self Protocol integration (uncomment when SDK is ready)
-/*
-import { SelfBackendVerifier } from '@selfxyz/core'
-
-const verifier = new SelfBackendVerifier({
-  scope: 'mandate-execution-layer',
-  endpoint: process.env.SELF_VERIFY_ENDPOINT || 'http://localhost:3000/api/verify-self',
-  minimumAge: 18,
-  enableOfac: true,
-})
-
-export async function verifySelfProofReal(
-  proof: unknown,
-  publicSignals: unknown
-): Promise<SelfVerificationResult> {
-  const result = await verifier.verify(proof, publicSignals)
-  if (result.valid) {
-    const selfProofHash = keccak256(
-      encodePacked(['bytes'], [proof as `0x${string}`])
-    )
-    return { valid: true, selfProofHash, provider: 'self-protocol' }
-  }
-  return { valid: false, selfProofHash: null, provider: 'self-protocol' }
-}
-*/
