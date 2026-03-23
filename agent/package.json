@@ -4,15 +4,17 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "demo": "tsx demo-run.ts",
-    "mcp": "tsx mcp-server.ts"
+    "demo": "tsx demo/run-demo.ts"
   },
   "dependencies": {
     "@metamask/delegation-toolkit": "^0.13.0",
-    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@selfxyz/agent-sdk": "^0.2.1",
+    "@selfxyz/core": "^1.0.8",
+    "@types/express": "^5.0.6",
     "dotenv": "^16.4.5",
-    "viem": "^2.21.0",
-    "zod": "^4.3.6"
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "viem": "^2.21.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

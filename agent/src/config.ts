@@ -1,7 +1,6 @@
 import dotenv from 'dotenv'
-import { createPublicClient, createWalletClient, http, type Chain } from 'viem'
+import { createPublicClient, createWalletClient, http, defineChain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { baseSepolia } from 'viem/chains'
 
 dotenv.config()
 
@@ -19,26 +18,37 @@ function envKey(key: string): `0x${string}` {
 export const VENICE_API_KEY = env('VENICE_API_KEY')
 export const MANDATE_REGISTRY_ADDRESS = env('MANDATE_REGISTRY_ADDRESS') as `0x${string}`
 export const ACTION_RECEIPT_ADDRESS = env('ACTION_RECEIPT_ADDRESS') as `0x${string}`
-export const BASE_SEPOLIA_RPC = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org'
+export const SELF_REGISTRY_ADDRESS = (process.env.SELF_REGISTRY_ADDRESS || '0x043DaCac8b0771DD5b444bCC88f2f8BBDBEdd379') as `0x${string}`
+export const CELO_SEPOLIA_RPC = env('CELO_SEPOLIA_RPC_URL')
+
+// Celo Sepolia chain definition
+export const celoSepolia = defineChain({
+  id: 11142220,
+  name: 'Celo Sepolia',
+  nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
+  rpcUrls: {
+    default: { http: [CELO_SEPOLIA_RPC] },
+  },
+})
 
 export const agentAccount = privateKeyToAccount(envKey('AGENT_PRIVATE_KEY'))
 export const humanAccount = privateKeyToAccount(envKey('HUMAN_PRIVATE_KEY'))
 
 export const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http(BASE_SEPOLIA_RPC),
+  chain: celoSepolia,
+  transport: http(CELO_SEPOLIA_RPC),
 })
 
 export const agentWalletClient = createWalletClient({
   account: agentAccount,
-  chain: baseSepolia,
-  transport: http(BASE_SEPOLIA_RPC),
+  chain: celoSepolia,
+  transport: http(CELO_SEPOLIA_RPC),
 })
 
 export const humanWalletClient = createWalletClient({
   account: humanAccount,
-  chain: baseSepolia,
-  transport: http(BASE_SEPOLIA_RPC),
+  chain: celoSepolia,
+  transport: http(CELO_SEPOLIA_RPC),
 })
 
 export const MANDATE_REGISTRY_ABI = [
@@ -50,7 +60,6 @@ export const MANDATE_REGISTRY_ABI = [
       { name: 'allowedActions', type: 'bytes32[]' },
       { name: 'expiresAt', type: 'uint256' },
       { name: 'maxValuePerAction', type: 'uint256' },
-      { name: 'selfProofHash', type: 'bytes32' },
     ],
     outputs: [{ name: 'mandateId', type: 'uint256' }],
     stateMutability: 'nonpayable',
@@ -65,7 +74,6 @@ export const MANDATE_REGISTRY_ABI = [
       { name: 'allowedActions', type: 'bytes32[]' },
       { name: 'expiresAt', type: 'uint256' },
       { name: 'maxValuePerAction', type: 'uint256' },
-      { name: 'selfProofHash', type: 'bytes32' },
       { name: 'active', type: 'bool' },
     ],
     stateMutability: 'view',

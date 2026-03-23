@@ -1,6 +1,6 @@
 import { keccak256, encodePacked } from 'viem'
 import { agentAccount } from './config.js'
-import { fetchMandate, localMandateCheck, hashAction } from './mandate.js'
+import { fetchMandate, localMandateCheck, hashAction, isHumanBacked } from './mandate.js'
 import { checkCompliance, type ComplianceDecision } from './venice.js'
 import { postReceipt } from './receipt.js'
 import { executeAction, type Action } from './executor.js'
@@ -41,8 +41,10 @@ export async function executeWithMandate(
 
   // 2. Fetch mandate from chain
   const mandate = await fetchMandate(mandateId)
+  const humanBacked = await isHumanBacked(mandateId)
   console.log(`  Mandate owner: ${mandate.owner}`)
-  console.log(`  Human-backed: ${mandate.selfProofHash !== '0x0000000000000000000000000000000000000000000000000000000000000000'}`)
+  console.log(`  Mandate agent: ${mandate.agent}`)
+  console.log(`  Human-backed (live Self check): ${humanBacked}`)
 
   // 3. Local pre-checks (informational — Venice makes the final decision)
   const localCheck = localMandateCheck(
@@ -66,7 +68,7 @@ export async function executeWithMandate(
       allowedActionNames,
       expiresAt: mandate.expiresAt,
       maxValuePerAction: mandate.maxValuePerAction,
-      selfProofHash: mandate.selfProofHash,
+      humanBacked: humanBacked,
       // Pass local check result so Venice has full context
       localCheckResult: {
         passed: localCheck.passed,

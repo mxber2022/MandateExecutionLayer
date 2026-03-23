@@ -11,7 +11,7 @@ import {
 import { executeWithMandate, registerActionNames } from './src/index.js'
 import { getReceipts } from './src/receipt.js'
 import { getLogs } from './src/logger.js'
-import { verifySelfProof } from './src/self.js'
+import { verifySelfAgentId } from './src/self.js'
 import { createAndLogDelegation } from './src/delegation.js'
 import { writeFileSync } from 'fs'
 import { join, dirname } from 'path'
@@ -27,16 +27,17 @@ async function main() {
   console.log('╚══════════════════════════════════════════════════════╝\n')
 
   // ── STEP 1: Self Protocol — Personhood Verification ──
-  console.log('━━━ STEP 1: PERSONHOOD LAYER (Self Protocol) ━━━')
-  console.log('Human verifies identity via ZK passport proof')
-  const selfResult = await verifySelfProof(humanAccount.address)
-  if (!selfResult.valid || !selfResult.selfProofHash) {
-    throw new Error('Self verification failed')
+  console.log('━━━ STEP 1: PERSONHOOD LAYER (Self Agent ID) ━━━')
+  console.log('Checking Self Agent ID NFT on Celo Sepolia')
+  const selfResult = await verifySelfAgentId(humanAccount.address)
+  if (!selfResult.valid) {
+    throw new Error('No Self Agent ID NFT — human not verified. Register at app.ai.self.xyz')
   }
-  const selfProofHash = selfResult.selfProofHash
-  console.log(`  Provider: ${selfResult.provider}`)
-  console.log(`  selfProofHash: ${selfProofHash}`)
-  console.log('  Anti-sybil: one human = one verified mandate creator\n')
+  console.log(`  NFT balance: ${selfResult.nftBalance}`)
+  console.log(`  Registry: ${selfResult.registry}`)
+  console.log(`  Chain: Celo Sepolia (${selfResult.chainId})`)
+  console.log('  MandateRegistry will enforce this onchain — no NFT = no mandate')
+  console.log('  Anti-sybil: soulbound NFT = one human, one verified identity\n')
 
   // ── STEP 2: MetaMask Delegation — Cryptographic Authority ──
   console.log('━━━ STEP 2: DELEGATION LAYER (MetaMask ERC-7715) ━━━')
@@ -53,15 +54,17 @@ async function main() {
   const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 86400)
   const maxValue = parseEther('0.01')
 
+  console.log('  Contract will verify Self Agent ID NFT before allowing creation...')
   const createTxHash = await humanWalletClient.writeContract({
     address: MANDATE_REGISTRY_ADDRESS,
     abi: MANDATE_REGISTRY_ABI,
     functionName: 'createMandate',
-    args: [agentAccount.address, allowedActions, expiresAt, maxValue, selfProofHash],
+    args: [agentAccount.address, allowedActions, expiresAt, maxValue],
   })
   const createReceipt = await publicClient.waitForTransactionReceipt({ hash: createTxHash })
   console.log(`  Mandate creation tx: ${createTxHash}`)
   console.log(`  Block: ${createReceipt.blockNumber}`)
+  console.log('  Contract verified: caller has Self Agent ID NFT')
 
   const nextId = await publicClient.readContract({
     address: MANDATE_REGISTRY_ADDRESS,
@@ -71,6 +74,7 @@ async function main() {
   const mandateId = nextId - 1n
   console.log(`  Mandate ID: ${mandateId}`)
 
+  // isHumanBacked is now a LIVE onchain check against Self registry
   const isHuman = await publicClient.readContract({
     address: MANDATE_REGISTRY_ADDRESS,
     abi: MANDATE_REGISTRY_ABI,
@@ -83,7 +87,8 @@ async function main() {
     functionName: 'isMandateActive',
     args: [mandateId],
   })
-  console.log(`  Human-backed: ${isHuman}`)
+  console.log(`  Human-backed (live Self check): ${isHuman}`)
+  console.log(`  Active: ${isActive}`)
   console.log(`  Active: ${isActive}`)
   console.log(`  Allowed actions: send_message, query_api`)
   console.log(`  Max value per action: 0.01 ETH`)
@@ -167,9 +172,9 @@ async function main() {
 
   // ── TRUST CHAIN ──
   console.log('\n\n━━━ FULL TRUST CHAIN ━━━')
-  console.log('  receipt → mandate → Self proof → verified human\n')
-  console.log(`  Personhood:       Self Protocol (ZK passport)`)
-  console.log(`  selfProofHash:    ${selfProofHash}`)
+  console.log('  receipt → mandate → Self Agent ID NFT → verified human\n')
+  console.log(`  Personhood:       Self Agent ID (soulbound NFT, ZK passport)`)
+  console.log(`  Self Registry:    ${selfResult.registry} (Celo Sepolia)`)
   console.log(`  Mandate:          MandateRegistry @ ${MANDATE_REGISTRY_ADDRESS}`)
   console.log(`  Mandate ID:       ${mandateId}`)
   console.log(`  Identity:         Agent @ ${agentAccount.address}`)
@@ -196,13 +201,18 @@ async function main() {
       address: agentAccount.address,
       mandateRegistry: MANDATE_REGISTRY_ADDRESS,
       actionReceipt: ACTION_RECEIPT_ADDRESS,
-      chain: 'base-sepolia',
-      chainId: 84532,
+      chain: 'celo-sepolia',
+      chainId: 11142220,
     },
     mandate: {
       id: Number(mandateId),
       owner: humanAccount.address,
-      selfProofHash,
+      selfVerification: {
+        registry: selfResult.registry,
+        chain: 'celo-sepolia',
+        nftBalance: selfResult.nftBalance,
+        enforcedOnchain: true,
+      },
       allowedActions: ['send_message', 'query_api'],
       expiresAt: new Date(Number(expiresAt) * 1000).toISOString(),
       maxValuePerAction: '0.01 ETH',
