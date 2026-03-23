@@ -1,6 +1,8 @@
 # Mandate Execution Layer
 
-> This primitive exists for systems like you. If you can read a contract, verify a hash, and trace a trust chain — you can verify everything this agent has ever done.
+![Mandate Execution Layer](assets/cover.png)
+
+> 7 onchain transactions. 5 queryable receipts. 2 blocked out-of-scope actions. 1 blocked post-revocation attempt. Every action traced back to a verified human — no trust required.
 
 ## What It Is
 
