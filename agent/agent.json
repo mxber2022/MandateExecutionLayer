@@ -9,21 +9,31 @@
     "operator": "0xf282FCCc0608147aB493e6a081d354646614b4F1",
     "agentAddress": "0x63673a506B04454D720dc891862a348Df97Ae7bA",
     "registeredVia": "@selfxyz/agent-sdk",
-    "registrationMode": "linked"
+    "registrationMode": "linked",
+    "erc8004": {
+      "celoSepolia": { "agentId": 247, "registry": "0x8004A818BFB912233c491871b3d84c89A494BD9e" },
+      "baseSepolia": { "agentId": 2906, "registry": "0x8004A818BFB912233c491871b3d84c89A494BD9e" }
+    }
   },
   "capabilities": [
     "mandate-compliance-check",
     "action-execution",
     "receipt-generation",
     "self-identity-verification",
-    "venice-reasoning-all-actions"
+    "venice-reasoning-all-actions",
+    "delegation-verification"
   ],
   "contracts": {
     "mandateRegistry": "0x25dd80A4E8193a1369763991EB03ce378C09EEBE",
     "actionReceipt": "0x58BF38bAd9F33A5C3892870af8B35964E55e3E53",
     "selfAgentIdRegistry": "0x043DaCac8b0771DD5b444bCC88f2f8BBDBEdd379",
     "chain": "celo-sepolia",
-    "chainId": 11142220
+    "chainId": 11142220,
+    "baseSepoliaContracts": {
+      "mandateRegistry": "0xA0F8E21B7DeafB489563B5428e42d26745c9EA52",
+      "actionReceipt": "0xEcAe9d43d49d02D1ED926A7Dce25e85a9B047a43",
+      "chainId": 84532
+    }
   },
   "personhood": {
     "provider": "self-protocol",
@@ -52,6 +62,7 @@
     "reasoningModel": "llama-3.3-70b",
     "reasoningPrivacy": "no-data-retention",
     "reasoningScope": "all-actions-compliant-and-blocked",
+    "delegation": "metamask-erc7715",
     "chain": "celo-sepolia"
   },
   "trustChain": {
@@ -59,7 +70,7 @@
     "layers": [
       { "name": "personhood", "provider": "self-protocol", "purpose": "soulbound NFT on Celo Sepolia — contract enforces balanceOf > 0 at mandate creation" },
       { "name": "mandate", "provider": "MandateRegistry.sol", "purpose": "defines bounded agent authority — live Self verification, no stored hash" },
-      { "name": "identity", "provider": "self-agent-id", "purpose": "Self Agent ID #34, registered via @selfxyz/agent-sdk linked mode" },
+      { "name": "identity", "provider": "erc-8004", "purpose": "ERC-8004 agent ID #247 (Celo Sepolia) + #2906 (Base Sepolia)" },
       { "name": "reasoning", "provider": "venice-ai", "purpose": "private compliance reasoning on ALL actions" },
       { "name": "receipt", "provider": "ActionReceipt.sol", "purpose": "immutable proof of every action" }
     ]
