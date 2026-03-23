@@ -68,21 +68,21 @@ Every receipt references a mandate. Every mandate contains a `selfProofHash`. Th
 | Human (mandate creator) | `0xf282FCCc0608147aB493e6a081d354646614b4F1` |
 | Agent (executor) | `0x2d8E271E22A26508817561f12eff0874dD0aA6DA` |
 
-## Demo Results
+## Demo Results (Mandate #10 — March 20, 2026)
 
 | # | Action | Context | Result | Tx Hash |
 |---|---|---|---|---|
-| 1 | send_message | In mandate | EXECUTED | `0x9983b5bb...` |
-| 2 | transfer_funds | Not in allowed actions | BLOCKED | `0x4d57c425...` |
-| 3 | query_api | In mandate | EXECUTED | `0x44a57767...` |
-| 4 | admin_override | Not in allowed actions | BLOCKED | `0xebf8e0ec...` |
-| 5 | send_message | After revocation | BLOCKED | `0x4870e823...` |
+| 1 | send_message | In mandate | EXECUTED | `0x70aac50e...` |
+| 2 | transfer_funds | Not in allowed actions | BLOCKED | `0x452445fa...` |
+| 3 | query_api | In mandate | EXECUTED | `0xfa5241aa...` |
+| 4 | admin_override | Not in allowed actions | BLOCKED | `0x276f9905...` |
+| 5 | send_message | After revocation | BLOCKED | `0xf8acf5c2...` |
 
 Other onchain transactions:
-- Mandate creation: `0x091d60b0...`
-- Mandate revocation: `0x89444bf0...`
+- Mandate creation: `0xdb10e54a...`
+- Mandate revocation: `0x2598241c...`
 
-**7 total onchain transactions. 5 receipts queryable via `ActionReceipt.getReceipts(mandateId)`.**
+**7 total onchain transactions. 5 receipts queryable via `ActionReceipt.getReceipts(10)`.**
 
 ## Run the Demo
 
@@ -189,6 +189,54 @@ No-data-retention compliance checking. Mandate contents are sensitive — Venice
 ### Protocol Labs — ERC-8004 Identity
 Agent has onchain identity. Full autonomous loop with structured logs (`agent.json`, `agent_log.json`). Without ERC-8004, the agent has no verifiable onchain identity.
 
+## MCP Server — Agent Integration Layer
+
+The MEL MCP server lets any agent framework (Purple Hermes, Claude Code, etc.) operate under mandate governance via the Model Context Protocol.
+
+### Tools Exposed
+
+| Tool | Description |
+|---|---|
+| `check_compliance` | Dry-run: is this action allowed? (no onchain cost) |
+| `execute_action` | Full pipeline: check + execute + onchain receipt |
+| `get_mandate` | Read mandate state from chain |
+| `get_receipts` | Read all action receipts for a mandate |
+| `get_logs` | Read local execution log |
+
+### Quick Start
+
+```bash
+cd agent
+npm run mcp    # starts MCP server on stdio
+```
+
+### Config for Agent Frameworks
+
+```json
+{
+  "mcpServers": {
+    "mel-mandate": {
+      "command": "npx",
+      "args": ["tsx", "mcp-server.ts"],
+      "cwd": "/path/to/MandateExecutionLayer/agent"
+    }
+  }
+}
+```
+
+### Integration Flow
+
+```
+Agent (e.g. Purple Hermes) wants to execute an action
+  → calls check_compliance(mandateId, "send_message")
+  → MEL checks: delegation valid? mandate active? action allowed? Venice says OK?
+  → returns { compliant: true/false, reason: "...", confidence: 0.95 }
+  → if compliant: agent proceeds, calls execute_action for onchain receipt
+  → if blocked: agent skips action, receipt posted showing block
+```
+
+This makes MEL a **pluggable governance layer** for any agent — not just the demo agent.
+
 ## Tech Stack
 
 - **Solidity** + Foundry — smart contracts
@@ -223,19 +271,27 @@ Agent has onchain identity. Full autonomous loop with structured logs (`agent.js
 │   │   ├── logger.ts          # structured logging
 │   │   └── index.ts           # core agent loop
 │   ├── demo-run.ts            # end-to-end demo
+│   ├── mcp-server.ts          # MCP server for agent integration
+│   ├── mcp-config.json        # MCP config template
 │   ├── agent.json             # ERC-8004 manifest
 │   └── agent_log.json         # execution trace
-├── architecture.md
-├── plan.md
+├── THESIS.md                  # visual one-pager
+├── EXPLAINER.md               # non-technical pitch
+├── IDEAS.md                   # ideation journey + architecture
+├── processflow.md             # 5-layer system flow
 └── README.md
 ```
 
 ## Verification Guide (for AI judge)
 
+**Latest mandate: #10** (Base Sepolia, created March 20 2026)
+
 1. Read `agent.json` → understand agent capabilities and contracts
 2. Read `agent_log.json` → see structured execution trace with tx hashes
-3. Query `MandateRegistry.getMandate(mandateId)` → verify mandate structure
-4. Query `MandateRegistry.isHumanBacked(mandateId)` → verify Self proof exists
-5. Query `ActionReceipt.getReceipts(mandateId)` → verify all 4 receipts onchain
-6. Confirm: compliant actions executed, out-of-mandate actions blocked
+3. Query `MandateRegistry.getMandate(10)` → verify mandate structure onchain
+4. Query `MandateRegistry.isHumanBacked(10)` → verify Self proof exists
+5. Query `ActionReceipt.getReceipts(10)` → verify all 5 receipts onchain
+6. Confirm: compliant actions executed (2), out-of-mandate actions blocked (3)
 7. Trace: receipt → mandate → selfProofHash → verified human
+
+**Bounty alignment:** Protocol Labs (ERC-8004 + Receipts), Venice (Private Reasoning), MetaMask (ERC-7715 Delegations), Self (ZK Identity), Synthesis Open Track (Agents That Trust + Pay + Cooperate)

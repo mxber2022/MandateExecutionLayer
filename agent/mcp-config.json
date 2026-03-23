@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mel-mandate": {
+      "command": "npx",
+      "args": ["tsx", "mcp-server.ts"],
+      "cwd": "/Users/bbmisa/MandateExecutionLayer/agent",
+      "env": {}
+    }
+  }
+}

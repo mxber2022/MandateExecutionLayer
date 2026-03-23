@@ -4,12 +4,15 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "demo": "tsx demo/run-demo.ts"
+    "demo": "tsx demo-run.ts",
+    "mcp": "tsx mcp-server.ts"
   },
   "dependencies": {
     "@metamask/delegation-toolkit": "^0.13.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "dotenv": "^16.4.5",
-    "viem": "^2.21.0"
+    "viem": "^2.21.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
