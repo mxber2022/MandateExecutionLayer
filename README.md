@@ -1,4 +1,21 @@
-# Mandate Execution Layer
+<p align="center">
+  <img src="./banner.svg" alt="Mandate Execution Layer" width="100%"/>
+</p>
+
+<p align="center">
+  <strong>The missing primitive between identity and autonomy.</strong><br/>
+  <em>Humans define boundaries. Agents execute within them. Anyone can verify — onchain.</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/chain-Base%20Sepolia-0052FF?style=flat-square&logo=ethereum" alt="Base Sepolia"/>
+  <img src="https://img.shields.io/badge/contracts-verified-00ff88?style=flat-square" alt="Verified"/>
+  <img src="https://img.shields.io/badge/receipts-onchain-ff6600?style=flat-square" alt="Onchain"/>
+  <img src="https://img.shields.io/badge/reasoning-private-0088dd?style=flat-square" alt="Private"/>
+  <img src="https://img.shields.io/badge/ERC--8004-agent%20identity-00ccff?style=flat-square" alt="ERC-8004"/>
+</p>
+
+---
 
 ![Mandate Execution Layer](assets/cover.png)
 
@@ -70,21 +87,28 @@ Every receipt references a mandate. Every mandate contains a `selfProofHash`. Th
 | Human (mandate creator) | `0xf282FCCc0608147aB493e6a081d354646614b4F1` |
 | Agent (executor) | `0x2d8E271E22A26508817561f12eff0874dD0aA6DA` |
 
-## Demo Results (Mandate #10 — March 20, 2026)
+## Live Proof — Verify It Yourself (Mandate #10)
 
-| # | Action | Context | Result | Tx Hash |
-|---|---|---|---|---|
-| 1 | send_message | In mandate | EXECUTED | `0x70aac50e...` |
-| 2 | transfer_funds | Not in allowed actions | BLOCKED | `0x452445fa...` |
-| 3 | query_api | In mandate | EXECUTED | `0xfa5241aa...` |
-| 4 | admin_override | Not in allowed actions | BLOCKED | `0x276f9905...` |
-| 5 | send_message | After revocation | BLOCKED | `0xf8acf5c2...` |
+> **Every claim below is verifiable onchain. Click any link.**
 
-Other onchain transactions:
-- Mandate creation: `0xdb10e54a...`
-- Mandate revocation: `0x2598241c...`
+### Mandate Lifecycle
 
-**7 total onchain transactions. 5 receipts queryable via `ActionReceipt.getReceipts(10)`.**
+| Step | Tx |
+|------|----|
+| Mandate Created | [0x3c8efa6f...5828](https://sepolia.basescan.org/tx/0x3c8efa6f8aa1f8770bc86ee68b0aeffa00fa25a9f0c65246e8d6690afc2b5828) |
+| Mandate Revoked | [0x90c02562...7094](https://sepolia.basescan.org/tx/0x90c02562edb9f43cd960f13536a781a94665ec3489ae5bf4699fd1e0c7ff7094) |
+
+### Action Receipts
+
+| # | Action | Context | Result | Tx |
+|---|--------|---------|--------|----|
+| 1 | `send_message` | In mandate | ✅ EXECUTED | [0x682e35f3...719c](https://sepolia.basescan.org/tx/0x682e35f3f479ead34de867098afc0781855efaae3959e5aae53dd32a3d28719c) |
+| 2 | `transfer_funds` | Not in allowed actions | 🛑 BLOCKED | [0x6283bd9f...64ae](https://sepolia.basescan.org/tx/0x6283bd9f49caff70890c44edfd44b7df0ccd935a9d3b8097422f67cda56264ae) |
+| 3 | `query_api` | In mandate | ✅ EXECUTED | [0xd62eede3...b53](https://sepolia.basescan.org/tx/0xd62eede386b5f538a125adfdeee2a0aa05f9fd43c2ca8ce86cd2c1ae82bbba53) |
+| 4 | `admin_override` | Not in allowed actions | 🛑 BLOCKED | [0x89e22500...02c2](https://sepolia.basescan.org/tx/0x89e2250032f11b6c484e8634a63d093dc093998cb07329cd64d0633d77fa02c2) |
+| 5 | `send_message` | After revocation | 🛑 BLOCKED | [0xa66d43ee...7682](https://sepolia.basescan.org/tx/0xa66d43eecd4130ca60cfb9d0c29058d8eb17c876d878859f27cd7bb240417682) |
+
+**7 onchain transactions. 5 receipts queryable via `ActionReceipt.getReceipts(10)`. Zero trust required.**
 
 ## Run the Demo
 
@@ -108,7 +132,8 @@ MANDATE_REGISTRY_ADDRESS= # deployed registry
 ACTION_RECEIPT_ADDRESS=   # deployed receipt contract
 ```
 
-## Smart Contracts
+<details>
+<summary><strong>Smart Contracts</strong> (click to expand)</summary>
 
 ### MandateRegistry.sol
 
@@ -148,7 +173,10 @@ struct Receipt {
 }
 ```
 
-## Why Venice AI? Two-Layer Compliance
+</details>
+
+<details>
+<summary><strong>Why Venice AI? Two-Layer Compliance</strong> (click to expand)</summary>
 
 The agent uses a **two-layer compliance system** — local checks are the fast filter, Venice is the deep analysis.
 
@@ -177,19 +205,18 @@ Venice (private, semantic, probabilistic)
 
 Both layers are needed for a production-grade primitive.
 
+</details>
+
 ## Sponsor Integration
 
-### Self Protocol — Personhood Layer
-ZK passport verification via NFC. Proves the mandate creator is a real, unique human without revealing identity. `selfProofHash` stored in every mandate. Without Self, anyone can create mandates — bot farms flood the system.
+> Each sponsor is **load-bearing** — remove any one and the system breaks.
 
-### MetaMask — Delegation Framework
-ERC-7715 delegation from human to agent. Caveats encode mandate constraints. Delegation IS the cryptographic root of authority. Without delegation, there's no cryptographic proof the human authorized this agent.
-
-### Venice AI — Private Reasoning
-No-data-retention compliance checking. Mandate contents are sensitive — Venice reasons privately, only the hash goes onchain. Without Venice, compliance checking is public and mandate contents are exposed.
-
-### Protocol Labs — ERC-8004 Identity
-Agent has onchain identity. Full autonomous loop with structured logs (`agent.json`, `agent_log.json`). Without ERC-8004, the agent has no verifiable onchain identity.
+| Sponsor | Role | What Breaks Without It |
+|---------|------|----------------------|
+| **Self Protocol** | Personhood (ZK passport) | Bot farms flood mandate creation |
+| **MetaMask** | ERC-7715 Delegation | No cryptographic proof human authorized agent |
+| **Venice AI** | Private Reasoning | Mandate contents exposed publicly |
+| **Protocol Labs** | ERC-8004 Identity | Agent has no verifiable onchain identity |
 
 ## MCP Server — Agent Integration Layer
 
