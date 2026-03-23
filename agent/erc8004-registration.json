@@ -1,0 +1,49 @@
+{
+  "type": "MandateExecutionAgent",
+  "name": "MandateAgent — Mandate Execution Layer",
+  "description": "Autonomous agent that executes within human-defined mandates with verifiable onchain compliance. Every action is checked against a bounded mandate, verified by a private reasoning engine (Venice AI), and receipted onchain. Self Protocol personhood verification is enforced at the contract level. The trust chain: receipt → mandate → Self proof → verified human.",
+  "image": "https://raw.githubusercontent.com/mxber2022/MandateExecutionLayer/main/banner.svg",
+  "active": true,
+  "services": [
+    {
+      "type": "mcp",
+      "url": "https://github.com/mxber2022/MandateExecutionLayer",
+      "description": "MCP server for mandate-governed agent execution. Tools: check_compliance, execute_action, get_mandate, get_receipts, get_logs."
+    }
+  ],
+  "registrations": [
+    {
+      "agentRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+      "agentId": "247",
+      "chain": "Celo Sepolia",
+      "chainId": 11142220
+    },
+    {
+      "agentRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+      "agentId": "2906",
+      "chain": "Base Sepolia",
+      "chainId": 84532
+    }
+  ],
+  "supportedTrust": ["reputation", "mandate-verification", "personhood-verification"],
+  "capabilities": [
+    "mandate-compliance-check",
+    "action-execution",
+    "receipt-generation",
+    "self-identity-verification",
+    "venice-reasoning-all-actions"
+  ],
+  "contracts": {
+    "mandateRegistry": "0x25dd80A4E8193a1369763991EB03ce378C09EEBE",
+    "actionReceipt": "0x58BF38bAd9F33A5C3892870af8B35964E55e3E53",
+    "chain": "celo-sepolia",
+    "chainId": 11142220
+  },
+  "identity": {
+    "selfAgentId": 34,
+    "selfAgentIdRegistry": "0x043DaCac8b0771DD5b444bCC88f2f8BBDBEdd379",
+    "operator": "0xf282FCCc0608147aB493e6a081d354646614b4F1",
+    "agentAddress": "0x63673a506B04454D720dc891862a348Df97Ae7bA"
+  },
+  "trustChain": "receipt → mandate → Self proof → verified human"
+}

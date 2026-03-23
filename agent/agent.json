@@ -2,39 +2,55 @@
   "type": "MandateExecutionAgent",
   "name": "MandateAgent",
   "version": "1.0.0",
-  "description": "Autonomous agent that executes within human-defined mandates with verifiable onchain compliance. Every action is checked against a bounded mandate, verified by a private reasoning engine, and receipted onchain.",
+  "description": "Autonomous agent that executes within human-defined mandates with verifiable onchain compliance. Every action is checked against a bounded mandate, verified by a private reasoning engine, and receipted onchain. Self verification is enforced live at the contract level.",
   "identity": {
-    "erc8004": "",
+    "selfAgentId": 34,
+    "selfAgentIdRegistry": "0x043DaCac8b0771DD5b444bCC88f2f8BBDBEdd379",
     "operator": "0xf282FCCc0608147aB493e6a081d354646614b4F1",
-    "agentAddress": "0x2d8E271E22A26508817561f12eff0874dD0aA6DA"
+    "agentAddress": "0x63673a506B04454D720dc891862a348Df97Ae7bA",
+    "registeredVia": "@selfxyz/agent-sdk",
+    "registrationMode": "linked",
+    "erc8004": {
+      "celoSepolia": { "agentId": 247, "registry": "0x8004A818BFB912233c491871b3d84c89A494BD9e" },
+      "baseSepolia": { "agentId": 2906, "registry": "0x8004A818BFB912233c491871b3d84c89A494BD9e" }
+    }
   },
   "capabilities": [
     "mandate-compliance-check",
     "action-execution",
     "receipt-generation",
-    "delegation-verification",
-    "self-proof-verification"
+    "self-identity-verification",
+    "venice-reasoning-all-actions",
+    "delegation-verification"
   ],
   "contracts": {
-    "mandateRegistry": "0xA0F8E21B7DeafB489563B5428e42d26745c9EA52",
-    "actionReceipt": "0xEcAe9d43d49d02D1ED926A7Dce25e85a9B047a43",
-    "chain": "base-sepolia",
-    "chainId": 84532
+    "mandateRegistry": "0x25dd80A4E8193a1369763991EB03ce378C09EEBE",
+    "actionReceipt": "0x58BF38bAd9F33A5C3892870af8B35964E55e3E53",
+    "selfAgentIdRegistry": "0x043DaCac8b0771DD5b444bCC88f2f8BBDBEdd379",
+    "chain": "celo-sepolia",
+    "chainId": 11142220,
+    "baseSepoliaContracts": {
+      "mandateRegistry": "0xA0F8E21B7DeafB489563B5428e42d26745c9EA52",
+      "actionReceipt": "0xEcAe9d43d49d02D1ED926A7Dce25e85a9B047a43",
+      "chainId": 84532
+    }
   },
   "personhood": {
     "provider": "self-protocol",
-    "verification": "zk-passport-nfc",
+    "verification": "soulbound-nft-onchain",
+    "method": "selfRegistry.balanceOf(msg.sender) > 0",
+    "enforcement": "contract-level — createMandate() reverts without NFT",
     "antiSybil": true,
     "scope": "mandate-execution-layer"
   },
   "services": [
     {
       "name": "create-mandate",
-      "description": "Human creates a bounded mandate defining what actions the agent may perform"
+      "description": "Human creates a bounded mandate defining what actions the agent may perform. Contract enforces Self NFT ownership."
     },
     {
       "name": "execute-with-mandate",
-      "description": "Execute a proposed action within mandate bounds, with onchain receipt"
+      "description": "Execute a proposed action within mandate bounds, with Venice reasoning and onchain receipt"
     },
     {
       "name": "verify-compliance",
@@ -45,16 +61,17 @@
     "reasoning": "venice-ai",
     "reasoningModel": "llama-3.3-70b",
     "reasoningPrivacy": "no-data-retention",
+    "reasoningScope": "all-actions-compliant-and-blocked",
     "delegation": "metamask-erc7715",
-    "chain": "base-sepolia"
+    "chain": "celo-sepolia"
   },
   "trustChain": {
-    "description": "receipt → mandate → Self proof → verified human",
+    "description": "receipt → mandate → Self Agent ID NFT → verified human",
     "layers": [
-      { "name": "personhood", "provider": "self-protocol", "purpose": "proves mandate creator is a real human" },
-      { "name": "mandate", "provider": "MandateRegistry.sol", "purpose": "defines bounded agent authority" },
-      { "name": "identity", "provider": "erc-8004", "purpose": "onchain agent identity" },
-      { "name": "reasoning", "provider": "venice-ai", "purpose": "private compliance checking" },
+      { "name": "personhood", "provider": "self-protocol", "purpose": "soulbound NFT on Celo Sepolia — contract enforces balanceOf > 0 at mandate creation" },
+      { "name": "mandate", "provider": "MandateRegistry.sol", "purpose": "defines bounded agent authority — live Self verification" },
+      { "name": "identity", "provider": "erc-8004", "purpose": "ERC-8004 agent ID #247 (Celo Sepolia) + #2906 (Base Sepolia)" },
+      { "name": "reasoning", "provider": "venice-ai", "purpose": "private compliance reasoning on ALL actions" },
       { "name": "receipt", "provider": "ActionReceipt.sol", "purpose": "immutable proof of every action" }
     ]
   }
